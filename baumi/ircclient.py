@@ -114,14 +114,25 @@ class IRCClient(asynsocket.asynchat):
             self.process(msg.nick, *msg.params)
         elif msg.command == '353':
             nicks = [nick.strip('@+ ') for nick in msg.params[-1].split()]
-            self.nick_list.update(set(nicks))
+            self.nick_list = set(nicks)
             self.on_nicklist_changed()
         elif msg.command == 'JOIN':
-            self.nick_list.add(msg.nick)
-            self.on_nicklist_changed()
+            if msg.nick == self.nick:
+                logger.info('Joined channel {}'.format(*msg.params))
+            else:
+                self.nick_list.add(msg.nick)
+                self.on_nicklist_changed()
         elif msg.command in ('QUIT', 'PART'):
             self.nick_list.remove(msg.nick)
             self.on_nicklist_changed()
+        elif msg.command == 'KICK':
+            if msg.params[1] == self.nick:
+                message = 'Was kicked from {}. Try rejoin in 60 sek.'
+                logger.error(message.format(msg.params[0]))
+                self.sched.enter(60, 1, self.send_to_irc, ('JOIN', self.channel))
+            else:
+                self.nick_list.remove(msg.params[1])
+                self.on_nicklist_changed()
         elif msg.command == 'NICK':
             self.nick_list.remove(msg.nick)
             self.nick_list.add(*msg.params)
