@@ -109,12 +109,15 @@ class ServerCommands:
         else: raise ValueError
 
         if cmd == 'ein':
-            ping = serverpinger.Ping()
-            ping.host = host
-            ping.port = port
-            ping.state = None
-            self.server_monitor[ping.host] = ping
-            handle_monitor(host)
+            if host in self.server_monitor:
+                self.send_message('Den Server monitore ich bereits', channel)
+            else:
+                ping = serverpinger.Ping()
+                ping.host = host
+                ping.port = port
+                ping.state = None
+                self.server_monitor[ping.host] = ping
+                handle_monitor(host)
         elif cmd == 'aus':
             try: ping = self.server_monitor.pop(host)
             except KeyError: self.send_message('Wie auch immer.', channel)
