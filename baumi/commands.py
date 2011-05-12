@@ -112,7 +112,8 @@ class ServerCommands:
                 if ping.state != state:
                     if host == '62.173.168.9': host = 'ZeroPing'
                     elif host == '70.167.49.20': host = 'Ezpcusa'
-                    self.send_message('{} is nun {}'.format(host, state), channel)
+                    msg = '{} ist {} ({}ms).'.format(host, state, delay)
+                    self.send_message(msg, channel)
                     ping.state = state
             else:
                 self.serverpinger.poke(ping.host, ping.port, handle_monitor)
@@ -133,6 +134,7 @@ class ServerCommands:
             if host in self.server_monitor:
                 self.send_message('Den Server monitore ich bereits', channel)
             else:
+                self.send_message('Überwachung gestartet.', channel)
                 ping = serverpinger.Ping()
                 ping.host = host
                 ping.port = port
@@ -144,7 +146,7 @@ class ServerCommands:
             except KeyError: self.send_message('Wie auch immer.', channel)
             else:
                 self.sched.cancel(ping.event)
-                self.send_message('Gestoppt', channel)
+                self.send_message('Uberwachung gestoppt', channel)
 
 
 class UtilityCommands:
