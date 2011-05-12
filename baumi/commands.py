@@ -94,7 +94,9 @@ class ServerCommands:
             else:
                 self.serverpinger.poke(ping.host, ping.port, handle_monitor)
                 ping.event = self.sched.enter(30, 1, handle_monitor, (host, ))
-
+        if nick == channel:
+            self.send_message('Bitte nutze hier nur den channel', nick)
+            return
         (adress, cmd) = message.split()
         if ':' in adress:
             (host, port) = adress.split(':')
