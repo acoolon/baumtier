@@ -58,7 +58,7 @@ class IRCClient(asynsocket.asynchat):
             self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
             self.connect((self.host, self.port))
         except socket.gaierror:
-            logger.error('Name resolution error. Restarting in 6 minutes')
+            logger.critical('Name resolution error. Restarting in 6 minutes')
         except: self.handle_error()
         self.nick_list = set()
 

@@ -9,9 +9,11 @@ from baumi import ircclient
 from baumi import asynsocket
 from baumi import serverpinger
 
+import time
 import logging
 logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s:%(message)s',
-    filename='baumi_log', datefmt='%m-%d %H:%M', level=logging.DEBUG)
+    filename='logs/{}.log'.format(time.strftime('%Y_%m_%d_%H_%M')),
+    datefmt='%d-%m %H:%M:%S', level=logging.DEBUG)
 logger = logging.getLogger('baumi')
 
 ### commands ###
