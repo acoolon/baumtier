@@ -7,6 +7,7 @@ __version__ = '0.1'
 
 from baumi import serverpinger
 
+import random
 import logging
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,8 @@ class SpassCommands:
         self.commands['gib'] = self.gib
         self.commands['bring'] = self.bring
         self.commands['rothaus'] = self.rothaus
+        self.commands['8ball'] = self.eightball
+        self.commands['roll'] = self.roll
 
     def say(self, nick, channel, message):
         if channel == nick:
@@ -40,6 +43,26 @@ class SpassCommands:
             self.send_message('Yay, {} für mich.'.format(what), channel)
         else:
             self.send_action('bringt {} {}'.format(to, what), channel)
+
+    def eightball(self, nick, channel, message):
+        '''<Frage> :lass mich einfach entscheiden
+        Nur Fragen, die mit Ja/Nein beantwortet werden können
+        '''
+        if message:
+            pos_ans = ('Ganz klar: Ja!', 'Ich denke schon.', 'Ja!',
+                    'Na sicher!', 'Natürlich!', 'Auf jeden Fall!')
+            neg_ans = ('Nein!', 'Niemals', 'Eher nicht.',
+                'Auf keinen Fall!', 'Ganz klar: Nein!')
+            ans_list = random.choice((pos_ans, neg_ans))
+            ans = random.choice(ans_list)
+            self.send_message('{}: {}'.format(nick, ans), channel)
+        else: raise ValueError('eine frage fehlt')
+
+    def roll(self, nick, channel, message):
+        'number :eine Zahl zwischen 0 und number wählen'
+        number = int(message)
+        msg =  '{}, deine Zahl ist {}.'.format(nick, random.randint(0, number))
+        self.send_message(msg, channel)
 
     def rothaus(self, nick, channel, message):
         ':ein Bier für Haraun'
