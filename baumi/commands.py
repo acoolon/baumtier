@@ -8,7 +8,7 @@ __version__ = '0.1'
 from baumi import serverpinger
 
 import logging
-logger = logging.getLogger('commands')
+logger = logging.getLogger(__name__)
 
 
 class SpassCommands:

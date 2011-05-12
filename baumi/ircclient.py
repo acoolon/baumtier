@@ -4,7 +4,7 @@ from baumi import asynsocket
 
 import socket
 import logging
-logger = logging.getLogger('ircclient')
+logger = logging.getLogger(__name__)
 
 class IRCMessage:
     def __init__(self, message=''):

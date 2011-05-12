@@ -11,7 +11,7 @@ import time
 import random
 import socket
 import logging
-logger = logging.getLogger('serverpinger')
+logger = logging.getLogger(__name__)
 
 GENERIC =  b'\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x08\x00\x00'
 QUESTION = GENERIC + b'\x01\x05\x00\x00\x00\x00\x00\x03'
