@@ -1,3 +1,4 @@
 baumi_*
 __pycache__/
+logs/
 *.swp
