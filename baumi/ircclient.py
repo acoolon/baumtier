@@ -134,6 +134,7 @@ class IRCClient(asynsocket.asynchat):
             (command, *message) = message[1:].split(' ', 1)
             if message: message = message[0]
             else: message = ''
+            if channel == self.nick: channel = nick
             try:
                 callback = self.commands[command]
             except KeyError:

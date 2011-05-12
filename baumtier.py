@@ -24,7 +24,7 @@ class SpassCommands:
         self.commands['rothaus'] = self.rothaus
 
     def say(self, nick, channel, message):
-        if channel == self.nick:
+        if channel == nick:
             (new_channel, msg) = message.split(' ', 1)
             self.send_message(msg, new_channel)
 
