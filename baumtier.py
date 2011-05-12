@@ -30,6 +30,26 @@ class Baumi(ircclient.IRCClient, commands.Commands):
             msg = msg.format(command, cmd.__doc__.split('\n')[0])
             self.send_message(msg, nick)
 
+    def use_brain(self, nick, channel, message):
+        if message.startswith(self.nick): # somehow important
+            logger.info('Brain on: {} - {} - {}'.format(nick, channel, message))
+            if 'line' in message: # online/offline
+                if 'ero' in message or 'aanx' in message:
+                    self.ping(nick, channel, 'zero')
+                elif 'ez' in message or 'zpx' in message:
+                    self.ping(nick, channel, 'ez')
+            elif 'ink' in message: # link/Link
+                (crap, intresting) = message.split('ink ')
+                print(crap, intresting)
+                words = intresting.split(' ')
+                print(words)
+                if words[0] == 'für':
+                    next_word = words[1]
+                    print(next_word)
+                    if next_word in ('ter', 'die', 'das'):
+                        next_word = words[2]
+                    self.link(nick, channel, next_word)
+
     def on_nicklist_changed(self):
         logger.debug('Nicklist changed.')
         with open('baumi_nicklist', 'w') as f_nicklist:

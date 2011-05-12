@@ -140,22 +140,21 @@ class IRCClient(asynsocket.asynchat):
         else: logger.debug(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
 
     def process(self, nick, channel, message):
+        if channel == self.nick: channel = nick
         if message.startswith('!') and len(message) > 1:
             (command, *message) = message[1:].split(' ', 1)
             if message: message = message[0]
             else: message = ''
-            if channel == self.nick: channel = nick
-            try:
+            if command in self.commands:
                 callback = self.commands[command]
-            except KeyError:
-                self.fallback_callback(command, nick, channel, message)
-            else:
                 try: callback(nick, channel, message)
                 except ValueError:
                     self.error_callback(command, nick, channel, message)
                 else:
                     msg = '{} called command {} in {}: {}'
                     logger.info(msg.format(nick, command, channel, message))
+            else: self.fallback_callback(command, nick, channel, message)
+        else: self.use_brain(nick, channel, message)
 
     def fallback_callback(self, command, nick, channel, message):
         msg = '{} called unimplemented command {} in {}: {}'
@@ -164,6 +163,8 @@ class IRCClient(asynsocket.asynchat):
     def error_callback(self, command, nick, channel, message):
         msg = 'Error: {} called command {} in {}: {}'
         logger.info(msg.format(nick, command, channel, message))
+
+    def use_brain(self, nick, channel, message): pass
 
     def on_nicklist_changed(self):
         logger.info('Nicklist changed: {}'.format(sorted(self.nick_list)))
