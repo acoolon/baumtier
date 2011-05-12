@@ -2,7 +2,6 @@
 
 from baumi import asynsocket
 
-import time
 import socket
 import logging
 logger = logging.getLogger('ircclient')
