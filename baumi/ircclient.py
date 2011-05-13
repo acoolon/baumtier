@@ -119,16 +119,20 @@ class IRCProtocol:
     def handle_privmsg(self, message): self.client.process(msg.nick, *msg.params)
 
     def handle_nicklist(self, message):
-        nicks = [nick.strip('@+ ') for nick in msg.params[-1].split()]
-        self.nick_list = set(nicks)
-        self.on_nicklist_changed()
+        (*crap, channel_name, nicks) = msg.params
+        channel = self.channels[channel_name]
+        for nick in nicks.split(): channel.add(nick)
+        self.on_nicklist_changed(channel_name)
 
     def handle_join(self, message):
         if msg.nick == self.nick:
-            logger.info('Joined channel {}'.format(*msg.params))
+            for channel_name in msg.params:
+                self.channels[channel_name] = IRCChannel(channel_name)
+                logger.info('Joined channel {}'.format(channel_name))
         else:
-            self.nick_list.add(msg.nick)
-            self.on_nicklist_changed()
+            for channel_name in msg.params:
+                self.channels[channel_name].add(msg.nick)
+                self.on_nicklist_changed(channel_name)
 
     def handle_nick(self, message):
         self.nick_list.remove(msg.nick)
@@ -138,12 +142,14 @@ class IRCProtocol:
     def handle_mode(self, message): pass
 
     def handle_part(self, message):
-        self.nick_list.remove(msg.nick)
-        self.on_nicklist_changed()
+        for channel_name in msg.params:
+            self.channels[channel_name].remove(msg.nick)
+            self.on_nicklist_changed(channel_name)
 
-    def handle_quit(self, message):
-        self.nick_list.remove(msg.nick)
-        self.on_nicklist_changed()
+    def handle_quit(self, message): # XXX
+        for channel_name in msg.params:
+            self.channels[channel_name].remove(msg.nick)
+            self.on_nicklist_changed(channel_name)
 
     def handle_kick(self, message):
         if msg.params[1] == self.nick:
