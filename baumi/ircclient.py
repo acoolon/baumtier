@@ -113,8 +113,12 @@ class IRCProtocol:
         elif msg.command == 'PART': self.handle_part(msg)
         elif msg.command == 'QUIT': self.handle_quit(msg)
         elif msg.command == 'KICK': self.handle_kick(msg)
-        elif msg.command == '433': logger.critical(msg.param[-1])
+        elif msg.command == '433': logger.critical(msg.params[-1])
+        elif msg.command == 'NOTICE': logger.info(msg.params[-1])
         elif msg.command in ('372', '375', '376'): pass # motd
+        elif msg.command in ('001', '002', '003', '004', '005'): pass
+        elif msg.command in ('251', '252', '253', '254', '255'): pass
+        elif msg.command in ('265', '266', '250', '366'): pass
         else: logger.debug(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
 
     def handle_ping(self, msg): self.send_pong(*msg.params)
@@ -127,7 +131,7 @@ class IRCProtocol:
         (*crap, channel_name, nicks) = msg.params
         channel = self.channels[channel_name]
         for nick in nicks.split(): channel.add(nick)
-        self.on_nicklist_changed(channel_name)
+        self.client.on_nicklist_changed(channel_name)
 
     def handle_join(self, msg):
         channel_names = msg.params[0].split(',')
@@ -138,13 +142,13 @@ class IRCProtocol:
         else:
             for channel_name in channel_names:
                 self.channels[channel_name].add(msg.nick)
-                self.on_nicklist_changed(channel_name)
+                self.client.on_nicklist_changed(channel_name)
 
     def handle_nick(self, msg):
         for channel in self.channels:
             if msg.nick in channel:
                 channel.rename(msg.nick, *msg.params)
-                self.on_nicklist_changed(str(channel))
+                self.client.on_nicklist_changed(str(channel))
 
     def handle_mode(self, msg):
         (*channel_name, mode, nick) = msg.params
@@ -162,17 +166,17 @@ class IRCProtocol:
             for channel_name in channel_names:
                 logger.info('Left channel {}'.format(channel_name))
                 del self.channels[channel_name]
-                self.on_nicklist_changed(channel_name)
+                self.client.on_nicklist_changed(channel_name)
         else:
             for channel_name in channel_names:
                 self.channels[channel_name].remove(msg.nick)
-                self.on_nicklist_changed(channel_name)
+                self.client.on_nicklist_changed(channel_name)
 
     def handle_quit(self, msg): pass
-        channel_name = msg.params[0]
-        for channel_name in msg.params:
-            self.channels[channel_name].remove(msg.nick)
-            self.on_nicklist_changed(channel_name)
+        #channel_name = msg.params[0]
+        #for channel_name in msg.params:
+        #    self.channels[channel_name].remove(msg.nick)
+        #    self.client.on_nicklist_changed(channel_name)
 
     def handle_kick(self, msg):
         (channel_name, nick, reason) = msg.params
@@ -182,12 +186,12 @@ class IRCProtocol:
             logger.error(message.format(channel_name, repr(reason)))
             self.sched.enter(60, 1, self.send_join, (channel_name,))
             del self.channels[channel_name]
-        self.on_nicklist_changed(channel_name)
+        self.client.on_nicklist_changed(channel_name)
 
 
 class IRCClient(asynsocket.asynchat):
-    def __init__(self, sched, nick, user,
-            host='irc.freenode.net', port=6667, *channels):
+    def __init__(self, sched, nick, user, *channels,
+            host='irc.freenode.net', port=6667):
         super().__init__()
         (self.host, self.port) = (host, port)
         self.protocol = IRCProtocol(self, nick, user)
@@ -272,4 +276,4 @@ class IRCClient(asynsocket.asynchat):
         pass
 
     def on_nicklist_changed(self, channel):
-        logger.info('Nicklist for {} changed.'.format(channel)
+        logger.info('Nicklist for {} changed.'.format(channel))
