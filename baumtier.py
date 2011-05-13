@@ -50,8 +50,9 @@ class Baumi(ircclient.IRCClient, commands.Commands):
                         next_word = words[2]
                     self.link(nick, channel, next_word)
 
-    def on_nicklist_changed(self):
+    def on_nicklist_changed(self, channel):
         logger.debug('Nicklist changed.')
+        return
         with open('baumi_nicklist', 'w') as f_nicklist:
             f_nicklist.write('\n'.join(sorted(self.nick_list)))
             f_nicklist.close()
