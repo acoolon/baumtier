@@ -132,7 +132,7 @@ class ServerCommands:
 
         if cmd == 'ein':
             if host in self.server_monitor:
-                self.send_message('Den Server monitore ich bereits', channel)
+                self.send_message('Den Server überwache ich bereits', channel)
             else:
                 self.send_message('Überwachung gestartet.', channel)
                 ping = serverpinger.Ping()
