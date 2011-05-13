@@ -39,15 +39,132 @@ class IRCMessage:
     def add_params(self, *params): self.params.extend(params)
 
 
+class IRCChannel:
+    def __init__(self, name):
+        self.name = name
+        self.users = set()
+        self.modes = dict()
+
+    def __str__(self): return self.name
+    def __len__(self): return len(self.users)
+    def __iter__(self): return iter(self.users)
+
+    def add(self, user):
+        self.users.add(user.strip('@+'))
+        if user.startswith('@'): self.set_mode(user.strip('@'), '+o')
+        elif user.startswith('+'): self.set_mode(user.strip('+'), '+v')
+
+    def remove(self, user):
+        try: self.users.remove(user)
+        except KeyError: logger.debug('Cant remove user {}'.format(user))
+
+    def rename(self, user, new_name):
+        if user in self.modes: self.modes[new_name] = self.modes.pop(user)
+        self.remove(user)
+        self.add(new_name)
+
+    def set_mode(self, user, mode):
+        (change, new_mode) = mode
+        if user in self.modes:
+            user_mode = self.modes[user]
+            if change == '+': user_mode += new_mode
+            elif change == '-': user_mode = user_mode.replace(new_mode, '')
+        elif change == '+': self.modes[user] = new_mode
+
+    def has_op(self, user): return 'o' in self.modes.get(user, '')
+    def has_voice(self, user): return 'v' in self.modes.get(user, '')
+
+
+class IRCProtocol:
+    def __init__(self, client):
+        self.client = client
+        self.channels = dict()
+
+    def send_to_irc(self, command, *params):
+        msg = IRCMessage()
+        msg.set_command(command)
+        msg.add_params(*params)
+        message = str(msg)
+        self.client.send_line(message)
+
+    def send_nick(self, nick): self.send_to_irc('NICK', nick)
+    def send_user(self): self.send_to_irc('USER', self.user, '8', '*', self.user)
+    def send_join(self, *channels): self.send_to_irc('JOIN', ','.join(channels))
+    def send_part(self, *channels): self.send_to_irc('PART', ','.join(channels))
+    def send_quit(self, *reason): self.send_to_irc('QUIT', *reason)
+    def send_pong(self, payload): self.send_to_irc('PONG', payload)
+
+    def send_message(self, message, channel):
+        self.send_to_irc('PRIVMSG', channel, message)
+
+    def send_action(self, messag, channel):
+        message = '{}ACTION {} {}'.format(chr(1), message, chr(1))
+        self.send_message(message, channel)
+
+    def handle_message(self, message):
+        msg = IRCMessage(message)
+        if msg.command == 'PING': self.handle_ping(msg)
+        elif msg.command == 'PRIVMSG': self.handle_privmsg(msg)
+        elif msg.command == '353': self.handle_nicklist(msg)
+        elif msg.command == 'JOIN': self.handle_join(msg)
+        elif msg.command == 'NICK': self.handle_nick(msg)
+        elif msg.command == 'MODE': self.handle_mode(msg)
+        elif msg.command == 'PART': self.handle_part(msg)
+        elif msg.command == 'QUIT': self.handle_quit(msg)
+        elif msg.command == 'KICK': self.handle_kick(msg)
+        elif msg.command in ('372', '375', '376'): pass # motd
+        else: logger.debug(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
+
+    def handle_ping(self, message): self.send_pong(*message.params)
+    def handle_privmsg(self, message): self.client.process(msg.nick, *msg.params)
+
+    def handle_nicklist(self, message):
+        nicks = [nick.strip('@+ ') for nick in msg.params[-1].split()]
+        self.nick_list = set(nicks)
+        self.on_nicklist_changed()
+
+    def handle_join(self, message):
+        if msg.nick == self.nick:
+            logger.info('Joined channel {}'.format(*msg.params))
+        else:
+            self.nick_list.add(msg.nick)
+            self.on_nicklist_changed()
+
+    def handle_nick(self, message):
+        self.nick_list.remove(msg.nick)
+        self.nick_list.add(*msg.params)
+        self.on_nicklist_changed()
+
+    def handle_mode(self, message): pass
+
+    def handle_part(self, message):
+        self.nick_list.remove(msg.nick)
+        self.on_nicklist_changed()
+
+    def handle_quit(self, message):
+        self.nick_list.remove(msg.nick)
+        self.on_nicklist_changed()
+
+    def handle_kick(self, message):
+        if msg.params[1] == self.nick:
+            message = 'Was kicked from {}. Try rejoin in 60 sek.'
+            logger.error(message.format(msg.params[0]))
+            self.sched.enter(60, 1, self.send_to_irc, ('JOIN', self.channel))
+        else:
+            self.nick_list.remove(msg.params[1])
+            self.on_nicklist_changed()
+
+
 class IRCClient(asynsocket.asynchat):
     def __init__(self, sched, nick, user, channel, host='irc.freenode.net', port=6667):
         super().__init__()
         (self.nick, self.user, self.channel) = (nick, user, channel)
         (self.host, self.port) = (host, port)
-        self.sched = sched
+        self.protocol = IRCProtocol(self)
         self.terminator = '\r\n'
         self.commands = dict()
         self.nick_list = set()
+        self.sched = sched
         self.start()
 
     def start(self):
@@ -61,23 +178,23 @@ class IRCClient(asynsocket.asynchat):
         except: self.handle_error()
         self.nick_list = set()
 
-    def disconnect(self):
-        self.send_to_irc('PART', self.channel)
-        self.send_to_irc('QUIT')
-        self.handle_close()
-
-    def restart(self):
-        self.disconnect()
-        self.start()
-
     def handle_connect(self):
-        self.send_to_irc('NICK', self.nick)
-        self.send_to_irc('USER', self.user, '8', '*', self.user)
-        self.send_to_irc('JOIN', self.channel)
+        self.protocol.send_nick(self.nick)
+        self.protocol.send_user()
+        self.protocol.send_join(self.channel)
+
+    def disconnect(self):
+        self.protocol.send_part(self.channel)
+        self.protocol.send_quit()
+        self.handle_close()
 
     def handle_close(self):
         logger.info('IRC client stopped.')
         self.close()
+
+    def restart(self):
+        self.disconnect()
+        self.start()
 
     def handle_error(self):
         logger.exception('Exception in IRCClient')
@@ -88,56 +205,15 @@ class IRCClient(asynsocket.asynchat):
                 logger.error('Return in >{}<'.format(repr(message)))
                 message = message.replace('\n', ' - ')
             logger.info('Sending {} to {}'.format(message, channel))
-            self.send_to_irc('PRIVMSG', channel, message)
+            self.protocol.send_message(message, channel)
 
     def send_action(self, message, channel):
-        if message:
-            message = '{}ACTION {} {}'.format(chr(1), message, chr(1))
-            self.send_message(message, channel)
-
-    def send_to_irc(self, command, *params):
-        msg = IRCMessage()
-        msg.set_command(command)
-        msg.add_params(*params)
-        message = str(msg)
-        self.send_line(message)
+        if message: self.protocol.send_action(message, channel)
 
     def found_terminator(self, message):
         self.sched.cancel(self.timeout_event)
         self.timeout_event = self.sched.enter(360, 1, self.restart, tuple())
-
-        msg = IRCMessage(message)
-        if msg.command == 'PING':
-            self.send_to_irc('PONG', *msg.params)
-        elif msg.command == 'PRIVMSG':
-            self.process(msg.nick, *msg.params)
-        elif msg.command == '353':
-            nicks = [nick.strip('@+ ') for nick in msg.params[-1].split()]
-            self.nick_list = set(nicks)
-            self.on_nicklist_changed()
-        elif msg.command == 'JOIN':
-            if msg.nick == self.nick:
-                logger.info('Joined channel {}'.format(*msg.params))
-            else:
-                self.nick_list.add(msg.nick)
-                self.on_nicklist_changed()
-        elif msg.command in ('QUIT', 'PART'):
-            self.nick_list.remove(msg.nick)
-            self.on_nicklist_changed()
-        elif msg.command == 'KICK':
-            if msg.params[1] == self.nick:
-                message = 'Was kicked from {}. Try rejoin in 60 sek.'
-                logger.error(message.format(msg.params[0]))
-                self.sched.enter(60, 1, self.send_to_irc, ('JOIN', self.channel))
-            else:
-                self.nick_list.remove(msg.params[1])
-                self.on_nicklist_changed()
-        elif msg.command == 'NICK':
-            self.nick_list.remove(msg.nick)
-            self.nick_list.add(*msg.params)
-            self.on_nicklist_changed()
-        elif msg.command in ('372', '375', '376'): pass # motd
-        else: logger.debug(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
+        self.protocol.handle_message(message)
 
     def process(self, nick, channel, message):
         if channel == self.nick: channel = nick
