@@ -113,6 +113,7 @@ class IRCProtocol:
         elif msg.command == 'PART': self.handle_part(msg)
         elif msg.command == 'QUIT': self.handle_quit(msg)
         elif msg.command == 'KICK': self.handle_kick(msg)
+        elif msg.command == '433': logger.critical(msg.param[-1])
         elif msg.command in ('372', '375', '376'): pass # motd
         else: logger.debug(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
 
