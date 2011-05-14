@@ -197,27 +197,31 @@ class UtilityCommands:
             return [line.split(' ', 1) for line in lines if line]
 
     def bookmark_add(self, nick, channel, *args):
-        (name, link) = args
-        with open('baumi_bookmarks', 'a') as f_book:
-            f_book.write('{} {}\n'.format(name, link))
-            self.send_message('Ok, erledigt.', channel)
+        if self.has_op_voice(channel, nick):
+            (name, link) = args
+            with open('baumi_bookmarks', 'a') as f_book:
+                f_book.write('{} {}\n'.format(name, link))
+                self.send_message('Ok, erledigt.', channel)
+        else: self.send_message('Das darfst  du nicht!', channel)
 
     def bookmark_del(self, nick, channel, *args):
-        (name, *crap) = args
-        lines = self.read_bookmarks()
-        if lines:
-            new_lines = list()
-            deleted_lines = list()
-            for (new_name, link) in lines:
-                if new_name == name: deleted_lines.append(link)
-                else: new_lines.append('{} {}\n'.format(new_name, link))
-            with open('baumi_bookmarks', 'w') as f_book:
-                f_book.write(''.join(new_lines))
-            if deleted_lines:
-                msg = '{} gelöscht.'.format(' | '.join(deleted_lines))
-                self.send_message(msg, channel)
-            else: self.send_message('Es gibt nichts zu löschen', channel)
-        else: self.send_message('Es gibt noch keine Bookmarks', channel)
+        if self.has_op_voice(channel, nick):
+            (name, *crap) = args
+            lines = self.read_bookmarks()
+            if lines:
+                new_lines = list()
+                deleted_lines = list()
+                for (new_name, link) in lines:
+                    if new_name == name: deleted_lines.append(link)
+                    else: new_lines.append('{} {}\n'.format(new_name, link))
+                with open('baumi_bookmarks', 'w') as f_book:
+                    f_book.write(''.join(new_lines))
+                if deleted_lines:
+                    msg = '{} gelöscht.'.format(' | '.join(deleted_lines))
+                    self.send_message(msg, channel)
+                else: self.send_message('Es gibt nichts zu löschen', channel)
+            else: self.send_message('Es gibt noch keine Bookmarks', channel)
+        else: self.send_message('Das darfst  du nicht!', channel)
 
     def bookmark_list(self, nick, channel, *args):
         lines = self.read_bookmarks()
