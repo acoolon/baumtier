@@ -13,11 +13,12 @@ import socket
 import logging
 logger = logging.getLogger(__name__)
 
-GENERIC =  b'\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x08\x00\x00'
+GENERIC = b'\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x08\x00\x00'
 QUESTION = GENERIC + b'\x01\x05\x00\x00\x00\x00\x00\x03'
 
 
 class Ping: pass
+
 
 class Pinger(asynsocket.dispatcher):
     def __init__(self, sched):
@@ -49,7 +50,7 @@ class Pinger(asynsocket.dispatcher):
 
     def handle_read(self):
         (data, (host, port)) = self.recvfrom(1400)
-        if len(data) == 23 and data[15] == 1: # Is ping packet?
+        if len(data) == 23 and data[15] == 1:  # Is ping packet?
             if data[-1] == 6: state = 'online'
             elif data[-1] == 8: state = 'voll'
             elif data[-1] == 4: state = 'online, aber geschlossen'

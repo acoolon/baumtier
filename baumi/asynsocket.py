@@ -3,8 +3,9 @@
 import time
 import sched
 import asyncore
-
 dispatcher = asyncore.dispatcher
+
+
 class asynchat(asyncore.dispatcher):
     def __init__(self):
         super().__init__()
@@ -34,15 +35,17 @@ class asynchat(asyncore.dispatcher):
         '''Implement'''
         pass
 
+
+class asynschedcore(sched.scheduler):
 # taken from http://stackoverflow.com/users/466143/helmut
 # http://stackoverflow.com/questions/1036646/pythons-asyncore-to-periodically-send-data-using-a-variable-timeout-is-there-a/4956882#4956882
-class asynschedcore(sched.scheduler):
     """Combine sched.scheduler and asyncore.loop."""
     # On receiving a signal asyncore kindly restarts select. However the signal
     # handler might change the scheduler instance. This tunable determines the
     # maximum time in seconds to spend in asycore.loop before reexamining the
     # scheduler.
     maxloop = 30
+
     def __init__(self, map=None):
         sched.scheduler.__init__(self, time.time, self._delay)
         if map is None:
@@ -57,7 +60,7 @@ class asynschedcore(sched.scheduler):
         # Returning from this function causes the next event to be executed, so
         # it might be executed too early. This can be avoided by modifying the
         # head of the queue. Also note that enterabs sets _abort_delay to True.
-        self.enterabs(0, 0, lambda:None, ())
+        self.enterabs(0, 0, lambda: None, ())
         self._abort_delay = False
         return True
 
@@ -85,7 +88,8 @@ class asynschedcore(sched.scheduler):
         return sched.scheduler.enterabs(self, abstime, priority, action,
                                         argument)
 
-    # Overwriting enter is not necessary, because it is implemented using enter.
+    # Overwriting enter is not necessary,
+    # because it is implemented using enter.
 
     def cancel(self, event):
         # We might cancel the next event.

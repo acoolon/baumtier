@@ -55,7 +55,7 @@ class SpassCommands:
     def roll(self, nick, channel, message):
         'number :eine Zahl zwischen 0 und number wählen'
         number = int(message)
-        msg =  '{}, deine Zahl ist {}.'.format(nick, random.randint(0, number))
+        msg = '{}, deine Zahl ist {}.'.format(nick, random.randint(0, number))
         self.send_message(msg, channel)
 
     def rothaus(self, nick, channel, message):
@@ -198,7 +198,8 @@ class UtilityCommands:
             with open('baumi_bookmarks', 'w') as f_book:
                 f_book.write(''.join(new_lines))
             if deleted_lines:
-                self.send_message('{} gelöscht.'.format(' | '.join(deleted_lines)), channel)
+                msg = '{} gelöscht.'.format(' | '.join(deleted_lines))
+                self.send_message(msg, channel)
             else: self.send_message('Es gibt nichts zu löschen', channel)
         else: self.send_message('Es gibt noch keine Bookmarks', channel)
 
@@ -212,10 +213,12 @@ class UtilityCommands:
                     if name == new_name: links.append(link)
                 if links: self.send_message(' | '.join(links), channel)
                 else:
-                    self.send_message('Keine Links für diesen Namen gespeichert', channel)
+                    msg = 'Keine Links für diesen Namen gespeichert'
+                    self.send_message(msg, channel)
             else:
                 names = set([name for (name, link) in lines])
-                self.send_message('Alle Namen: {}'.format(' | '.join(names)), channel)
+                msg 'Alle Namen: {}'.format(' | '.join(names))
+                self.send_message(msg, channel)
         else: self.send_message('Es gibt noch keine Bookmarks', channel)
 
     def link(self, nick, channel, *args):

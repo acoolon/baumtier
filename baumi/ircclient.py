@@ -6,6 +6,7 @@ import socket
 import logging
 logger = logging.getLogger(__name__)
 
+
 class IRCMessage:
     def __init__(self, message=''):
         self.nick = self.user = self.command = ''
@@ -115,11 +116,12 @@ class IRCProtocol:
         elif msg.command == 'KICK': self.handle_kick(msg)
         elif msg.command == '433': logger.critical(msg.params[-1])
         elif msg.command == 'NOTICE': logger.info(msg.params[-1])
-        elif msg.command in ('372', '375', '376'): pass # motd
+        elif msg.command in ('372', '375', '376'): pass  # motd
         elif msg.command in ('001', '002', '003', '004', '005'): pass
         elif msg.command in ('251', '252', '253', '254', '255'): pass
         elif msg.command in ('265', '266', '250', '366'): pass
-        else: logger.debug(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
+        else:
+            logger.debug(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
 
     def handle_ping(self, msg): self.send_pong(*msg.params)
     def handle_privmsg(self, msg):
