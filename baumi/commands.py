@@ -1,10 +1,4 @@
-#!/usr/bin/env python
 # License: WTFPL (http://sam.zoy.org/wtfpl/)
-# baumtier by Thob
-# Usage: run it (python 333
-
-__version__ = '0.1'
-
 from baumi import serverpinger
 
 import random
