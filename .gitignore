@@ -1,5 +1,5 @@
 __pycache__/
 logs/*.log
-nicklist/*.list
+nicklists/*.list
 baumi_*
 *.swp
