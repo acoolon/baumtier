@@ -125,7 +125,7 @@ class IRCProtocol:
     def handle_privmsg(self, msg):
         (channel, message) = msg.params
         if channel == self.nick: channel = msg.nick
-        self.client.process(msg.nick, channel, messag)
+        self.client.process(msg.nick, channel, message)
 
     def handle_nicklist(self, msg):
         (*crap, channel_name, nicks) = msg.params

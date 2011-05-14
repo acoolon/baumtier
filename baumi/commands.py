@@ -107,14 +107,13 @@ class ServerCommands:
                     if host == '62.173.168.9': host = 'ZeroPing'
                     elif host == '70.167.49.20': host = 'Ezpcusa'
                     msg = '{} ist {} ({}ms).'.format(host, state, delay)
-                    self.send_message(msg, channel)
+                    for channel in ping.channels:
+                            self.send_message(msg, channel)
                     ping.state = state
             else:
                 self.serverpinger.poke(ping.host, ping.port, handle_monitor)
-                ping.event = self.sched.enter(30, 1, handle_monitor, (host, ))
-        if nick == channel:
-            self.send_message('Bitte nutze hier nur den channel', nick)
-            return
+                ping.event = self.sched.enter(15, 1, handle_monitor, (host, ))
+
         (adress, cmd) = message.split()
         if ':' in adress:
             (host, port) = adress.split(':')
@@ -124,23 +123,36 @@ class ServerCommands:
         elif 'ez' in adress: (host, port) = ('70.167.49.20', 7777)
         else: raise ValueError
 
-        if cmd == 'ein':
+        if cmd in ('ein', 'an', 'on', 'start'):
             if host in self.server_monitor:
-                self.send_message('Den Server monitore ich bereits', channel)
+                ping = self.server_monitor[host]
+                if channel in ping.channels:
+                        msg = 'Ich überwache {} bereits für {}.'
+                        self.send_message(msg.format(host, channel), channel)
+                else:
+                    ping.channels.append(channel)
+                    self.send_message('Überwachung gestartet.', channel)
             else:
+                logger.info('Startet observing {}.'.format(host))
                 self.send_message('Überwachung gestartet.', channel)
                 ping = serverpinger.Ping()
                 ping.host = host
                 ping.port = port
                 ping.state = None
+                ping.channels = [channel]
                 self.server_monitor[ping.host] = ping
                 handle_monitor(host)
-        elif cmd == 'aus':
-            try: ping = self.server_monitor.pop(host)
+        elif cmd in ('aus', 'halt', 'stop', 'off'):
+            try: ping = self.server_monitor[host]
             except KeyError: self.send_message('Wie auch immer.', channel)
             else:
-                self.sched.cancel(ping.event)
-                self.send_message('Uberwachung gestoppt', channel)
+                if channel in ping.channels:
+                        ping.channels.remove(channel)
+                        self.send_message('Uberwachung gestoppt', channel)
+                if not ping.channels:
+                        logger.info('Stopped observing {}.'.format(host))
+                        del self.server_monitor[host]
+                        self.sched.cancel(ping.event)
 
 
 class UtilityCommands:
