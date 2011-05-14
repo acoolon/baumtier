@@ -72,7 +72,7 @@ class Baumi(ircclient.IRCClient, commands.Commands):
                 if cmd.__doc__:
                     self.send_message('Hilfe für !{}:'.format(message), nick)
                     (short_help, *long_help) = cmd.__doc__.split('\n')
-                    msg = '!{} {}'.format(cmd_name, short_help)
+                    msg = '!{} {}'.format(cmd.__name__, short_help)
                     self.send_message(msg, nick)
                     for line in long_help:
                         self.send_message(line.strip(), nick)
