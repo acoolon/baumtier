@@ -58,6 +58,7 @@ class IRCChannel:
     def remove(self, user):
         try: self.users.remove(user)
         except KeyError: logger.debug('Cant remove user {}'.format(user))
+        if user in self.modes: del self.modes[user]
 
     def rename(self, user, new_name):
         if user in self.modes: self.modes[new_name] = self.modes.pop(user)
@@ -81,6 +82,8 @@ class IRCProtocol:
         self.client = client
         (self.nick, self.user) = (nick, user)
         self.channels = dict()
+
+    def clear_channels(self): self.channels = dict()
 
     def send_to_irc(self, command, *params):
         msg = IRCMessage()
@@ -156,7 +159,7 @@ class IRCProtocol:
     def handle_mode(self, msg):
         (*channel_name, mode, nick) = msg.params
         if channel_name:
-            channel = self.channels[channel_name]
+            channel = self.channels[channel_name[0]]
             channel.set_mode(nick, mode)
         else:
             for channel in self.channels:
@@ -206,6 +209,7 @@ class IRCClient(asynsocket.asynchat):
 
     def start(self):
         logger.info('IRC client started.')
+        self.protocol.clear_channels()
         self.timeout_event = self.sched.enter(360, 1, self.restart, tuple())
         try:
             self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -234,6 +238,10 @@ class IRCClient(asynsocket.asynchat):
 
     def handle_error(self):
         logger.exception('Exception in IRCClient')
+
+    def has_op_voice(self, channel, nick):
+        channel = self.protocol.channels[channel]
+        return channel.has_op(nick) or channel.has_voice(nick)
 
     def send_message(self, message, channel):
         if message:
