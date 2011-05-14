@@ -3,7 +3,7 @@
 # baumtier by Thob
 # Usage: run it (python 333
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 from baumi import asynsocket
 from baumi import ircclient
@@ -78,7 +78,7 @@ class Baumi(ircclient.IRCClient, commands.Commands):
                         self.send_message(line.strip(), nick)
                 else: self.send_message('Kenn ich nicht.', nick)
         else:
-            self.send_message('Baumtier v. {}'.format(__version__), nick)
+            self.send_message('Baumtier v{}'.format(__version__), nick)
             self.send_message('Kommandos sind:', nick)
             cmds = list()
             for cmd_name in self.commands:
@@ -90,7 +90,7 @@ class Baumi(ircclient.IRCClient, commands.Commands):
 
 def main():
     sched = asynsocket.asynschedcore()
-#    Baumi(sched, '#baumi-test', '#thewoiperdinger', nick='Baumi')
+#    Baumi(sched, '#baumi-test', nick='Baumi')
     Baumi(sched, '#psde')
     sched.run()
 
