@@ -100,7 +100,7 @@ class IRCProtocol:
         self.send_to_irc('NOTICE', channel, message)
         #self.send_to_irc('PRIVMSG', channel, message)
 
-    def send_action(self, messag, channel):
+    def send_action(self, message, channel):
         message = '{}ACTION {} {}'.format(chr(1), message, chr(1))
         self.send_message(message, channel)
 

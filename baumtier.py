@@ -83,7 +83,8 @@ class Baumi(ircclient.IRCClient, commands.Commands):
             cmds = list()
             for cmd_name in self.commands:
                 cmd = self.commands[cmd_name]
-                if cmd.__doc__: cmds.append(cmd_name)
+                if cmd.__doc__: cmds.append('!' + cmd_name)
+            self.send_message(', '.join(cmds), nick)
             self.send_message('!hilfe [command] für mehr Informationen', nick)
 
 
