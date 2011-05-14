@@ -175,11 +175,11 @@ class IRCProtocol:
                 self.channels[channel_name].remove(msg.nick)
                 self.client.on_nicklist_changed(channel_name)
 
-    def handle_quit(self, msg): pass
-        #channel_name = msg.params[0]
-        #for channel_name in msg.params:
-        #    self.channels[channel_name].remove(msg.nick)
-        #    self.client.on_nicklist_changed(channel_name)
+    def handle_quit(self, msg):
+        for channel in self.channels:
+            if msg.nick in channel:
+                channel.remove(msg.nick)
+                self.client.on_nicklist_changed(str(channel))
 
     def handle_kick(self, msg):
         (channel_name, nick, reason) = msg.params
