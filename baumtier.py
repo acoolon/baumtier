@@ -68,17 +68,19 @@ class Baumi(ircclient.IRCClient, commands.Commands):
             else:
                 if cmd.__doc__:
                     self.send_message('Hilfe für !{}:'.format(message), nick)
-                    for line in cmd.__doc__.split('\n'): self.send_message(line.strip(), nick)
+                    (short_help, *long_help) = cmd.__doc__.split('\n')
+                    msg = '!{} {}'.format(cmd_name, short_help)
+                    self.send_message(msg, nick)
+                    for line in long_help:
+                        self.send_message(line.strip(), nick)
                 else:  self.send_message('Kenn ich nicht.', nick)
         else:
             self.send_message('Hilfe für Baumtier version {}'.format(__version__), nick)
             self.send_message('Kommandos sind:', nick)
+            cmds = list()
             for cmd_name in self.commands:
                 cmd = self.commands[cmd_name]
-                if cmd.__doc__:
-                    (short_help, *long_help) = cmd.__doc__.split('\n')
-                    msg = '!{} {}'.format(cmd_name, short_help)
-                    self.send_message(msg, nick)
+                if cmd.__doc__: cmds.append(cmd_name)
             self.send_message('!hilfe [command] für mehr Informationen', nick)
 
 
