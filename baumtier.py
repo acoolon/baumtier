@@ -9,8 +9,8 @@ from baumi import asynsocket
 from baumi import ircclient
 from baumi import commands
 
-import time
 import os
+import time
 import logging
 logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s:%(message)s',
     filename='logs/{}.log'.format(time.strftime('%Y_%m_%d_%H_%M')),
@@ -41,12 +41,9 @@ class Baumi(ircclient.IRCClient, commands.Commands):
                     self.ping(nick, channel, 'ez')
             elif 'ink' in message:  # link/Link
                 (crap, intresting) = message.split('ink ')
-                print(crap, intresting)
                 words = intresting.split(' ')
-                print(words)
                 if words[0] == 'für':
                     next_word = words[1]
-                    print(next_word)
                     if next_word in ('ter', 'die', 'das'):
                         next_word = words[2]
                     self.link(nick, channel, next_word)
@@ -94,8 +91,8 @@ class Baumi(ircclient.IRCClient, commands.Commands):
 
 def main():
     sched = asynsocket.asynschedcore()
-    Baumi(sched, '#baumi-test', '#thewoiperdinger', nick='Baumi')
-#    Baumi(sched)
+#    Baumi(sched, '#baumi-test', '#thewoiperdinger', nick='Baumi')
+    Baumi(sched, '#psde')
     sched.run()
 
 if __name__ == '__main__':
