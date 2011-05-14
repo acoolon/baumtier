@@ -97,7 +97,8 @@ class IRCProtocol:
     def send_pong(self, payload): self.send_to_irc('PONG', payload)
 
     def send_message(self, message, channel):
-        self.send_to_irc('PRIVMSG', channel, message)
+        self.send_to_irc('NOTICE', channel, message)
+        #self.send_to_irc('PRIVMSG', channel, message)
 
     def send_action(self, messag, channel):
         message = '{}ACTION {} {}'.format(chr(1), message, chr(1))
