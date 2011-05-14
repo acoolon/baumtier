@@ -117,7 +117,7 @@ class ServerCommands:
                     ping.state = state
             else:
                 self.serverpinger.poke(ping.host, ping.port, handle_monitor)
-                ping.event = self.sched.enter(30, 1, handle_monitor, (host, ))
+                ping.event = self.sched.enter(15, 1, handle_monitor, (host, ))
         if nick == channel:
             self.send_message('Bitte nutze hier nur den channel', nick)
             return
@@ -130,7 +130,7 @@ class ServerCommands:
         elif 'ez' in adress: (host, port) = ('70.167.49.20', 7777)
         else: raise ValueError
 
-        if cmd == 'ein':
+        if cmd in ('ein', 'an', 'on', 'start'):
             if host in self.server_monitor:
                 self.send_message('Den Server überwache ich bereits', channel)
             else:
@@ -141,7 +141,7 @@ class ServerCommands:
                 ping.state = None
                 self.server_monitor[ping.host] = ping
                 handle_monitor(host)
-        elif cmd == 'aus':
+        elif cmd in ('aus', 'halt', 'stop', 'off'):
             try: ping = self.server_monitor.pop(host)
             except KeyError: self.send_message('Wie auch immer.', channel)
             else:
