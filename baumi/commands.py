@@ -158,6 +158,22 @@ class UtilityCommands:
     def __init__(self):
         self.commands['bookmark'] = self.bookmark
         self.commands['link'] = self.link
+        self.commands['join'] = self.join
+        self.commands['part'] = self.part
+
+    def join(self, nick, channel, message):
+        ' channel :Betrete channel, separiert durch " "'
+        channels = message.split()
+        if self.has_op_voice(channel, nick):
+                self.protocol.send_join(*channels)
+        else: self.send_message('Das darfst  du nicht!', nick)
+
+    def part(self, nick, channel, message):
+        ' channel :Verlasse channel, separiert durch " "'
+        channels = message.split()
+        if self.has_op_voice(channel, nick):
+            self.protocol.send_part(*channels)
+        else: self.send_message('Das darfst  du nicht!', nick)
 
     def bookmark(self, nick, channel, message):
         '''befehl [name] [link]
