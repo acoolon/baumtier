@@ -32,7 +32,7 @@ class Baumi(ircclient.IRCClient, commands.Commands):
             self.send_message(msg, nick)
 
     def use_brain(self, nick, channel, message):
-        if message.startswith(self.nick):  # somehow important
+        if message.startswith(self.protocol.nick):  # somehow important
             logger.info('Brain on: {}-{}-{}'.format(nick, channel, message))
             if 'line' in message:  # online/offline
                 if 'ero' in message or 'aanx' in message:
@@ -66,10 +66,8 @@ class Baumi(ircclient.IRCClient, commands.Commands):
         (wenn vorhanden) Hilfe.
         '''
         if message:
-            try:
-                cmd = self.commands[message]
-            except KeyError:
-                self.send_message('Kenn ich nicht.', nick)
+            try: cmd = self.commands[message]
+            except KeyError: self.send_message('Kenn ich nicht.', nick)
             else:
                 if cmd.__doc__:
                     self.send_message('Hilfe für !{}:'.format(message), nick)
@@ -78,7 +76,7 @@ class Baumi(ircclient.IRCClient, commands.Commands):
                     self.send_message(msg, nick)
                     for line in long_help:
                         self.send_message(line.strip(), nick)
-                else:  self.send_message('Kenn ich nicht.', nick)
+                else: self.send_message('Kenn ich nicht.', nick)
         else:
             self.send_message('Baumtier v. {}'.format(__version__), nick)
             self.send_message('Kommandos sind:', nick)

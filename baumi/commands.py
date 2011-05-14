@@ -23,10 +23,10 @@ class SpassCommands:
     def gib(self, nick, channel, message):
         '<Empfänger> <Objekt>'
         (to, what) = message.split(' ', 1)
-        if to == 'mir': to = nick
-        if to in (self.nick, 'dir'):
+        if to == 'dir':
             self.send_message('Yay, {} für mich.'.format(what), channel)
         else:
+            if to == 'mir': to = nick
             self.send_action('gibt {} {}'.format(to, what), channel)
 
     def bring(self, nick, channel, message):
@@ -84,7 +84,6 @@ class ServerCommands:
             msg = '{}, {} ist {} ({}ms).'.format(nick, host, state, delay)
             self.send_message(msg, channel)
 
-        if channel == self.nick: channel = nick
         if ':' in message:
             (host, port) = message.split(':')
             port = int(port)
@@ -218,7 +217,7 @@ class UtilityCommands:
                     self.send_message(msg, channel)
             else:
                 names = set([name for (name, link) in lines])
-                msg 'Alle Namen: {}'.format(' | '.join(names))
+                msg = 'Alle Namen: {}'.format(' | '.join(names))
                 self.send_message(msg, channel)
         else: self.send_message('Es gibt noch keine Bookmarks', channel)
 
