@@ -160,6 +160,7 @@ class UtilityCommands:
         self.commands['link'] = self.link
         self.commands['join'] = self.join
         self.commands['part'] = self.part
+        self.commands['quit'] = self.quit
 
     def join(self, nick, channel, message):
         ' channel :Betrete channel, separiert durch " "'
@@ -173,6 +174,11 @@ class UtilityCommands:
         channels = message.split()
         if self.has_op_voice(channel, nick):
             self.protocol.send_part(*channels)
+        else: self.send_message('Das darfst  du nicht!', nick)
+
+    def quit(self, nick, channel, message):
+        ' :Beende Baumtier'
+        if self.has_op_voice(channel, nick): self.disconnect()
         else: self.send_message('Das darfst  du nicht!', nick)
 
     def bookmark(self, nick, channel, message):

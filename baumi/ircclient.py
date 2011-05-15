@@ -225,10 +225,12 @@ class IRCClient(asynsocket.asynchat):
     def disconnect(self):
         self.protocol.send_part(*self.channels)
         self.protocol.send_quit()
-        self.handle_close()
 
     def handle_close(self):
         logger.info('IRC client stopped.')
+        if not self.sched.empty():
+            for event in self.sched.queue:
+                self.sched.cancel(event)
         self.close()
 
     def restart(self):
