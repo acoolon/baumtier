@@ -15,6 +15,8 @@ class SpassCommands:
         self.commands['8ball'] = self.eightball
         self.commands['roll'] = self.roll
 
+    def close(self): pass
+
     def say(self, nick, channel, message):
         if channel == nick:
             (new_channel, msg) = message.split(' ', 1)
@@ -71,6 +73,12 @@ class ServerCommands:
         self.commands['ping'] = self.ping
         self.commands['laanx'] = self.ping_laanx
         self.commands['monitor'] = self.monitor
+
+    def close(self):
+        for host in self.server_monitor:
+            ping = self.server_monitor[host]
+            self.sched.cancel(ping['event'])
+        self.serverpinger.handle_close()
 
     def ping(self, nick, channel, message):
         '''zeroping|ezpcusa|host:port
@@ -161,6 +169,8 @@ class UtilityCommands:
         self.commands['join'] = self.join
         self.commands['part'] = self.part
         self.commands['quit'] = self.quit
+
+    def close(self): pass
 
     def join(self, nick, channel, message):
         ' channel :Betrete channel, separiert durch " "'
@@ -258,3 +268,9 @@ class Commands(SpassCommands, ServerCommands, UtilityCommands):
         SpassCommands.__init__(self)
         ServerCommands.__init__(self)
         UtilityCommands.__init__(self)
+
+    def close(self):
+        SpassCommands.close(self)
+        ServerCommands.close(self)
+        UtilityCommands.close(self)
+

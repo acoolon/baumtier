@@ -209,7 +209,7 @@ class IRCClient(asynsocket.asynchat):
     def start(self):
         logger.info('IRC client started.')
         self.protocol.clear_channels()
-        self.timeout_event = self.sched.enter(360, 1, self.restart, tuple())
+        self.timeout_event = self.sched.enter(360, 1, self.start, tuple())
         try:
             self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
             self.connect((self.host, self.port))
@@ -223,19 +223,13 @@ class IRCClient(asynsocket.asynchat):
         self.protocol.send_join(*self.channels)
 
     def disconnect(self):
+        self.sched.cancel(self.timeout_event)
         self.protocol.send_part(*self.channels)
         self.protocol.send_quit()
 
     def handle_close(self):
         logger.info('IRC client stopped.')
-        if not self.sched.empty():
-            for event in self.sched.queue:
-                self.sched.cancel(event)
         self.close()
-
-    def restart(self):
-        self.disconnect()
-        self.start()
 
     def handle_error(self):
         logger.exception('Exception in IRCClient')
@@ -256,8 +250,9 @@ class IRCClient(asynsocket.asynchat):
         if message: self.protocol.send_action(message, channel)
 
     def found_terminator(self, message):
-        self.sched.cancel(self.timeout_event)
-        self.timeout_event = self.sched.enter(360, 1, self.restart, tuple())
+        if self.timeout_event in self.sched.queue:
+            self.sched.cancel(self.timeout_event)
+            self.timeout_event = self.sched.enter(360, 1, self.start, tuple())
         self.protocol.handle_message(message)
 
     def process(self, nick, channel, message):

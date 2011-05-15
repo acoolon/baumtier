@@ -21,8 +21,15 @@ logger = logging.getLogger('baumi')
 class Baumi(ircclient.IRCClient, commands.Commands):
     def __init__(self, sched, *channels, nick='Baumtierchen', user='baumi'):
         super().__init__(sched, nick, user, *channels)
+
+    def start(self):
+        super().start()
         self.commands = {'hilfe': self.help, 'help': self.help}
         commands.Commands.__init__(self)
+
+    def handle_close(self):
+        commands.Commands.close(self)
+        super().handle_close()
 
     def error_callback(self, command, nick, channel, message):
         cmd = self.commands[command]

@@ -33,6 +33,9 @@ class Pinger(asynsocket.dispatcher):
 
     def handle_close(self):
         logger.info('Serverpinger closed')
+        for host in self.pings:
+            ping = self.pings[host]
+            self.sched.cancel(ping.event)
         self.close()
 
     def handle_error(self):
