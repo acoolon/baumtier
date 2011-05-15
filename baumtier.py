@@ -51,7 +51,7 @@ class Baumi(ircclient.IRCClient, commands.Commands):
                 words = intresting.split(' ')
                 if words[0] == 'für':
                     next_word = words[1]
-                    if next_word in ('ter', 'die', 'das'):
+                    if next_word in ('der', 'die', 'das'):
                         next_word = words[2]
                     self.link(nick, channel, next_word)
 
