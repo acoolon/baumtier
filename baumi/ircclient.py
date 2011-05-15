@@ -123,6 +123,7 @@ class IRCProtocol:
         elif msg.command in ('001', '002', '003', '004', '005'): pass
         elif msg.command in ('251', '252', '253', '254', '255'): pass
         elif msg.command in ('265', '266', '250', '366'): pass
+        elif msg.command in ('332', '333', '328'): pass
         else:
             logger.debug(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
 
