@@ -57,7 +57,9 @@ class Baumi(ircclient.IRCClient, commands.Commands):
                 f_nicklist.write('\n'.join(sorted(channel)))
                 f_nicklist.close()
         else:
-            logger.debug('Should delet {}'.format(path))
+            try: os.remove(path)
+            except EnvironmentError: logger.error('Cant delet {}'.format(path))
+            else: logger.debug('Deleted {}'.format(path))
 
     def help(self, nick, channel, message):
         '''[command] :ein kurzer Hilfetext
