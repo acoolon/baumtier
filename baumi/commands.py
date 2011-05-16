@@ -1,4 +1,6 @@
 # License: WTFPL (http://sam.zoy.org/wtfpl/)
+
+from baumi import config
 from baumi import serverpinger
 
 import random
@@ -205,7 +207,7 @@ class UtilityCommands:
         else: raise ValueError('Bookmarks falsch aufgerufen')
 
     def read_bookmarks(self):
-        try: f_book = open('baumi_bookmarks')
+        try: f_book = open(config.BOOKMARKFILE)
         except EnvironmentError: return False
         else:
             lines = f_book.read().split('\n')
@@ -215,7 +217,7 @@ class UtilityCommands:
     def bookmark_add(self, nick, channel, *args):
         if self.has_op_voice(channel, nick):
             (name, link) = args
-            with open('baumi_bookmarks', 'a') as f_book:
+            with open(config.BOOKMARKFILE, 'a') as f_book:
                 f_book.write('{} {}\n'.format(name, link))
                 self.send_message('Ok, erledigt.', channel)
         else: self.send_message('Das darfst  du nicht!', channel)
@@ -230,7 +232,7 @@ class UtilityCommands:
                 for (new_name, link) in lines:
                     if new_name == name: deleted_lines.append(link)
                     else: new_lines.append('{} {}\n'.format(new_name, link))
-                with open('baumi_bookmarks', 'w') as f_book:
+                with open(config.BOOKMARKFILE, 'w') as f_book:
                     f_book.write(''.join(new_lines))
                 if deleted_lines:
                     msg = '{} gelöscht.'.format(' | '.join(deleted_lines))

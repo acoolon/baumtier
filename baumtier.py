@@ -3,18 +3,15 @@
 # baumtier by Thob
 # Usage: run it (python 333
 
-__version__ = '0.2'
-
 from baumi import asynsocket
 from baumi import ircclient
 from baumi import commands
+from baumi import config
 
 import os
-import time
 import logging
-logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s:%(message)s',
-    filename='logs/{}.log'.format(time.strftime('%Y_%m_%d_%H_%M')),
-    datefmt='%d-%m %H:%M:%S', level=logging.DEBUG)
+logging.basicConfig(format=config.LOGGING_FORMAT, filename=config.LOGFILE,
+                    datefmt=config.LOGGING_DATEFTM, level=config.LOGGING_LEVEL)
 logger = logging.getLogger('baumi')
 
 
@@ -56,7 +53,7 @@ class Baumi(ircclient.IRCClient, commands.Commands):
                     self.link(nick, channel, next_word)
 
     def on_nicklist_changed(self, channel_name):
-        path = os.path.join('nicklists', channel_name + '.list')
+        path = config.NICKFILE.format(channel_name)
         if channel_name in self.protocol.channels:
             logger.debug('Nicklist of {} changed.'.format(channel_name))
             with open(path, 'w') as f_nicklist:
@@ -87,7 +84,7 @@ class Baumi(ircclient.IRCClient, commands.Commands):
                         self.send_message(line.strip(), nick)
                 else: self.send_message('Kenn ich nicht.', nick)
         else:
-            self.send_message('Baumtier v{}'.format(__version__), nick)
+            self.send_message('Baumtier v{}'.format(config.__version__), nick)
             self.send_message('Kommandos sind:', nick)
             cmds = list()
             for cmd_name in self.commands:

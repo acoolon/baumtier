@@ -1,5 +1,6 @@
 # License: WTFPL (http://sam.zoy.org/wtfpl/)
 
+from baumi import config
 from baumi import asynsocket
 
 import socket
@@ -197,7 +198,7 @@ class IRCProtocol:
 
 class IRCClient(asynsocket.asynchat):
     def __init__(self, sched, nick, user, *channels,
-            host='irc.freenode.net', port=6667):
+                 host=config.IRC_DEFAULT_HOST, port=config.IRC_DEFAULT_PORT):
         super().__init__()
         (self.host, self.port) = (host, port)
         self.protocol = IRCProtocol(self, nick, user)
@@ -210,12 +211,14 @@ class IRCClient(asynsocket.asynchat):
     def start(self):
         logger.info('IRC client started.')
         self.protocol.clear_channels()
-        self.timeout_event = self.sched.enter(360, 1, self.start, tuple())
+        self.timeout_event = self.sched.enter(config.IRC_TIMEOUT, 1,
+                                              self.start, tuple())
         try:
             self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
             self.connect((self.host, self.port))
         except socket.gaierror:
-            logger.critical('Name resolution error. Restarting in 6 minutes')
+            string = 'Name resolution error. Restarting in {} minutes'
+            logger.critical(string.format(config.IRC_TIMEOUT//60))
         except: self.handle_error()
 
     def handle_connect(self):
@@ -254,7 +257,8 @@ class IRCClient(asynsocket.asynchat):
     def found_terminator(self, message):
         if self.timeout_event in self.sched.queue:
             self.sched.cancel(self.timeout_event)
-            self.timeout_event = self.sched.enter(360, 1, self.start, tuple())
+            self.timeout_event = self.sched.enter(config.IRC_TIMEOUT, 1,
+                                                  self.start, tuple())
         self.protocol.handle_message(message)
 
     def process(self, nick, channel, message):
