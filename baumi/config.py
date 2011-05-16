@@ -24,4 +24,4 @@ IRC_TIMEOUT = 360
 
 ### create dirs
 for d in (DATA_PATH, LOG_PATH, NICKLIST_PATH):
-    if not os.path.exist(d): os.makedirs(d)
+    if not os.path.exists(d): os.makedirs(d)
