@@ -55,7 +55,6 @@ class Baumi(ircclient.IRCClient, commands.Commands):
     def on_nicklist_changed(self, channel_name):
         path = config.NICKFILE.format(channel_name)
         if channel_name in self.protocol.channels:
-            logger.debug('Nicklist of {} changed.'.format(channel_name))
             with open(path, 'w') as f_nicklist:
                 channel = self.protocol.channels[channel_name]
                 f_nicklist.write('\n'.join(sorted(channel)))

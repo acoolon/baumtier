@@ -159,13 +159,16 @@ class IRCProtocol:
                 self.channels[channel_name] = IRCChannel(channel_name)
                 logger.info('Joined channel {}'.format(channel_name))
         else:
+            logger.debug('{} joined {}'.format(msg.nick, channel_names))
             for channel_name in channel_names:
                 self.channels[channel_name].add(msg.nick)
                 self.client.on_nicklist_changed(channel_name)
 
     def handle_nick(self, msg):
-        for channel in self.channels:
+        logger.debug('{} renamed to {}'.format(msg.nick, *msg.params))
+        for channel in self.channels.values():
             if msg.nick in channel:
+                logger.debug('rename in channel {}'.format(str(channel)))
                 channel.rename(msg.nick, *msg.params)
                 self.client.on_nicklist_changed(str(channel))
 
@@ -187,18 +190,22 @@ class IRCProtocol:
                 del self.channels[channel_name]
                 self.client.on_nicklist_changed(channel_name)
         else:
+            logger.debug('{} parted {}'.format(msg.nick, *msg.params))
             for channel_name in channel_names:
                 self.channels[channel_name].remove(msg.nick)
                 self.client.on_nicklist_changed(channel_name)
 
     def handle_quit(self, msg):
-        for channel in self.channels:
+        logger.debug('{} quit'.format(msg.nick))
+        for channel in self.channels.values():
             if msg.nick in channel:
+                logger.debug('quit in channel {}'.format(str(channel)))
                 channel.remove(msg.nick)
                 self.client.on_nicklist_changed(str(channel))
 
     def handle_kick(self, msg):
         (channel_name, nick, reason) = msg.params
+        logger.debug('{} was kicked from {}'.format(nick, channel_name))
         self.channels[channel_name].remove(nick)
         if nick == self.nick:
             message = 'Was kicked from {} with reason {}. Rejoin in 60 sek.'
