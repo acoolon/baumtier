@@ -52,16 +52,28 @@ class IRCChannel:
     def __iter__(self): return iter(self.users)
 
     def add(self, user):
+        if ' ' in user:
+            logger.debug('on add {}'.format(repr(user)))
+            user = user.strip()
         self.users.add(user.strip('@+'))
         if user.startswith('@'): self.set_mode(user.strip('@'), '+o')
         elif user.startswith('+'): self.set_mode(user.strip('+'), '+v')
 
     def remove(self, user):
+        if ' ' in user:
+            logger.debug('on remove {}'.format(repr(user)))
+            user = user.strip()
         try: self.users.remove(user)
         except KeyError: logger.debug('Cant remove user {}'.format(user))
         if user in self.modes: del self.modes[user]
 
     def rename(self, user, new_name):
+        if ' ' in user:
+            logger.debug('on rename (user) {}'.format(repr(user)))
+            user = user.strip()
+        if ' ' in new_name:
+            logger.debug('on rename (new_name) {}'.format(repr(user)))
+            new_name = new_name.strip()
         if user in self.modes: self.modes[new_name] = self.modes.pop(user)
         self.remove(user)
         self.add(new_name)
