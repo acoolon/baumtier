@@ -165,10 +165,10 @@ class IRCProtocol:
                 self.client.on_nicklist_changed(channel_name)
 
     def handle_nick(self, msg):
-        logger.debug('{} renamed to {}'.format(msg.nick, *msg.params))
         for channel in self.channels.values():
             if msg.nick in channel:
-                logger.debug('rename in channel {}'.format(str(channel)))
+                m = '{} renamed to {} in channel {}'
+                logger.debug(m.format(msg.nick, *msg.params, str(channel)))
                 channel.rename(msg.nick, *msg.params)
                 self.client.on_nicklist_changed(str(channel))
 
@@ -196,10 +196,10 @@ class IRCProtocol:
                 self.client.on_nicklist_changed(channel_name)
 
     def handle_quit(self, msg):
-        logger.debug('{} quit'.format(msg.nick))
         for channel in self.channels.values():
             if msg.nick in channel:
-                logger.debug('quit in channel {}'.format(str(channel)))
+                m = '{} quit in channel {}'
+                logger.debug(m.format(msg.nick, str(channel)))
                 channel.remove(msg.nick)
                 self.client.on_nicklist_changed(str(channel))
 
