@@ -168,7 +168,7 @@ class IRCProtocol:
         for channel in self.channels.values():
             if msg.nick in channel:
                 m = '{} renamed to {} in channel {}'
-                logger.debug(m.format(msg.nick, *msg.params, str(channel)))
+                logger.debug(m.format(msg.nick, msg.params[0], str(channel)))
                 channel.rename(msg.nick, *msg.params)
                 self.client.on_nicklist_changed(str(channel))
 
