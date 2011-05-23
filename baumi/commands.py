@@ -37,7 +37,7 @@ class SpassCommands:
         '<Empfänger> <Objekt>'
         (to, what) = message.split(' ', 1)
         if to == 'mir': to = nick
-        if to in (self.nick, 'dir'):
+        if to == 'dir':
             self.send_message('Yay, {} für mich.'.format(what), channel)
         else:
             self.send_action('bringt {} {}'.format(to, what), channel)

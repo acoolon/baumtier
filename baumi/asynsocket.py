@@ -7,8 +7,8 @@ dispatcher = asyncore.dispatcher
 
 
 class asynchat(asyncore.dispatcher):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._in_buffer = ''
         self._out_buffer = ''
         self.terminator = '\n'
