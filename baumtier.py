@@ -35,6 +35,11 @@ class Baumi(ircclient.IRCClient, commands.Commands):
             msg = msg.format(command, cmd.__doc__.split('\n')[0])
             self.send_message(msg, nick)
 
+    def is_authorized(self, channel, nick):
+        if '#psde-staff' in self.protocol.channels:
+            return super().is_authorized('#psde-staff', nick)
+        else: return super().is_authorized(channel, nick)
+
     def use_brain(self, nick, channel, message):
         if message.startswith(self.protocol.nick):  # somehow important
             logger.info('Brain on: {}-{}-{}'.format(nick, channel, message))
@@ -96,7 +101,7 @@ class Baumi(ircclient.IRCClient, commands.Commands):
 def main():
     sched = asynsocket.asynschedcore()
 #    Baumi(sched, '#baumi-test', nick='Baumi')
-    Baumi(sched, '#psde')
+    Baumi(sched, '#psde', '#psde-staff')
     sched.run()
 
 if __name__ == '__main__':

@@ -177,20 +177,20 @@ class UtilityCommands:
     def join(self, nick, channel, message):
         ' channel :Betrete channel, separiert durch " "'
         channels = message.split()
-        if self.has_op_voice(channel, nick):
+        if self.is_authorized(channel, nick):
                 self.protocol.send_join(*channels)
         else: self.send_message('Das darfst  du nicht!', nick)
 
     def part(self, nick, channel, message):
         ' channel :Verlasse channel, separiert durch " "'
         channels = message.split()
-        if self.has_op_voice(channel, nick):
+        if self.is_authorized(channel, nick):
             self.protocol.send_part(*channels)
         else: self.send_message('Das darfst  du nicht!', nick)
 
     def quit(self, nick, channel, message):
         ' :Beende Baumtier'
-        if self.has_op_voice(channel, nick): self.disconnect()
+        if self.is_authorized(channel, nick): self.disconnect()
         else: self.send_message('Das darfst  du nicht!', nick)
 
     def bookmark(self, nick, channel, message):
@@ -215,7 +215,7 @@ class UtilityCommands:
             return [line.split(' ', 1) for line in lines if line]
 
     def bookmark_add(self, nick, channel, *args):
-        if self.has_op_voice(channel, nick):
+        if self.is_authorized(channel, nick):
             (name, link) = args
             with open(config.BOOKMARKFILE, 'a') as f_book:
                 f_book.write('{} {}\n'.format(name, link))
@@ -223,7 +223,7 @@ class UtilityCommands:
         else: self.send_message('Das darfst  du nicht!', channel)
 
     def bookmark_del(self, nick, channel, *args):
-        if self.has_op_voice(channel, nick):
+        if self.is_authorized(channel, nick):
             (name, *crap) = args
             lines = self.read_bookmarks()
             if lines:

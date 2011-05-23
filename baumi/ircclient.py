@@ -257,7 +257,7 @@ class IRCClient(asynsocket.asynchat):
     def handle_error(self):
         logger.exception('Exception in IRCClient')
 
-    def has_op_voice(self, channel, nick):
+    def is_authorized(self, channel, nick):
         if channel == nick: return False
         channel = self.protocol.channels[channel]
         return channel.has_op(nick) or channel.has_voice(nick)
