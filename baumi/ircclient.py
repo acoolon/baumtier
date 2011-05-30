@@ -238,7 +238,11 @@ class IRCClient(asynsocket.asynchat):
         except socket.gaierror:
             string = 'Name resolution error. Restarting in {} minutes'
             logger.critical(string.format(config.IRC_TIMEOUT//60))
-        except: self.handle_error()
+        except socket.error as err:
+            if err.errno == 110:
+                string = 'Connection timeout while starting. Restarting in {} minutes'
+                logger.critical(string.format(config.IRC_TIMEOUT//60))
+            else: self.handle_error()
 
     def handle_connect(self):
         self.protocol.send_nick()
