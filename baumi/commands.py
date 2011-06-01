@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 class SpassCommands:
     def __init__(self):
         self.commands['sage'] = self.say
+        self.commands['frage'] = self.frage
         self.commands['gib'] = self.gib
         self.commands['bring'] = self.bring
         self.commands['rothaus'] = self.rothaus
@@ -23,6 +24,17 @@ class SpassCommands:
         if channel == nick:
             (new_channel, msg) = message.split(' ', 1)
             self.send_message(msg, new_channel)
+
+    def frage(self, nick, channel, message):
+        '''ziel frage: sende eine frage an ziel
+        z.b. !frage peter ob peter kekse schmecken
+        -> Baumi würde gerne wissen, ob peter kekse schmecken.
+        Funktioniert nur aus einem query.
+        '''
+        if channel == nick:
+            (new_channel, msg) = message.split(' ', 1)
+            self.send_action('würde gerne wissen, {}'.format(msg), new_channel)
+
 
     def gib(self, nick, channel, message):
         '<Empfänger> <Objekt>'
