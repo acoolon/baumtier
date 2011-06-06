@@ -16,7 +16,7 @@ class asynchat(asyncore.dispatcher):
     def handle_read(self):
         data = self.recv(4096)
         try: self._in_buffer += data.decode('utf-8')
-        except UnicodeDecodeError: raise Exception(repr(data))
+        except UnicodeDecodeError: logger.error('Cant encode ' + repr(data))
         while self.terminator in self._in_buffer:
             (msg, self._in_buffer) = self._in_buffer.split(self.terminator, 1)
             self.found_terminator(msg)
