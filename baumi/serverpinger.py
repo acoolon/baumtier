@@ -5,13 +5,14 @@
 
 __version__ = '0.2'
 
+from baumi import utils
 from baumi import asynsocket
 
 import time
 import random
 import socket
-import logging
-logger = logging.getLogger(__name__)
+
+logger = utils.logger.getLogger(__name__)
 
 GENERIC = b'\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x08\x00\x00'
 QUESTION = GENERIC + b'\x01\x05\x00\x00\x00\x00\x00\x03'
@@ -21,12 +22,11 @@ class Ping: pass
 
 
 class Pinger(asynsocket.dispatcher):
-    def __init__(self, sched):
+    def __init__(self):
         super().__init__()
         self.next_poke = list()
         self.pings = dict()
         self.done = False
-        self.sched = sched
         logger.info('Serverpinger started')
         self.create_socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('', random.randint(1025, 8000)))
@@ -35,7 +35,7 @@ class Pinger(asynsocket.dispatcher):
         logger.info('Serverpinger closed')
         for host in self.pings:
             ping = self.pings[host]
-            self.sched.cancel(ping.event)
+            utils.sched.cancel(ping.event)
         self.close()
 
     def handle_error(self):
@@ -47,7 +47,7 @@ class Pinger(asynsocket.dispatcher):
     def handle_write(self):
         ping = self.next_poke.pop(0)
         ping.ping_send = time.time()
-        ping.event = self.sched.enter(2, 1, self.handle_timeout, (ping.host,))
+        ping.event = utils.sched.enter(2, 1, self.handle_timeout, (ping.host,))
         self.pings[ping.host] = ping
         self.sendto(QUESTION, (ping.host, ping.port))
 
@@ -62,7 +62,7 @@ class Pinger(asynsocket.dispatcher):
             except KeyError: pass
             else:
                 delay = round((time.time() - ping.ping_send) * 1000, 2)
-                self.sched.cancel(ping.event)
+                utils.sched.cancel(ping.event)
                 ping.callback(host, state, delay)
         self.close_maybe()
 
@@ -86,14 +86,3 @@ class Pinger(asynsocket.dispatcher):
             ping.port = port
             self.next_poke.append(ping)
             return True
-
-
-def main():
-    sched = asynsocket.asynschedcore()
-    p = Pinger(sched)
-    p.poke('62.173.168.9', 7777, print)
-    p.poke('planeshift.ezpcusa.com', 7776, print)
-    p.done = True
-    sched.run()
-
-if __name__ == '__main__': main()

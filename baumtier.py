@@ -1,23 +1,21 @@
 #!/usr/bin/env python
 # License: WTFPL (http://sam.zoy.org/wtfpl/)
 # baumtier by Thob
-# Usage: run it (python 333
+# Usage: run it (python 3)
 
-from baumi import asynsocket
-from baumi import ircclient
-from baumi import commands
+from baumi import utils
 from baumi import config
+from baumi import commands
+from baumi import ircclient
 
 import os
-import logging
-logging.basicConfig(format=config.LOGGING_FORMAT, filename=config.LOGFILE,
-                    datefmt=config.LOGGING_DATEFTM, level=config.LOGGING_LEVEL)
-logger = logging.getLogger('baumi')
+
+logger = utils.logger.getLogger('baumi')
 
 
 class Baumi(ircclient.IRCClient, commands.Commands):
-    def __init__(self, sched, *channels, nick='Baumtierchen', user='baumi'):
-        super().__init__(sched, nick, user, *channels)
+    def __init__(self, *channels, nick='Baumtierchen', user='baumi'):
+        super().__init__(nick, user, *channels)
 
     def start(self):
         super().start()
@@ -99,10 +97,9 @@ class Baumi(ircclient.IRCClient, commands.Commands):
 
 
 def main():
-    sched = asynsocket.asynschedcore()
-#    Baumi(sched, '#baumi-test', nick='Baumi')
-    Baumi(sched, '#psde', '#psde-staff')
-    sched.run()
+#    Baumi('#baumi-test', nick='Baumi')
+    Baumi('#psde', '#psde-staff')
+    utils.sched.run()
 
 if __name__ == '__main__':
     main()

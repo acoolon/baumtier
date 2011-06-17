@@ -1,11 +1,11 @@
 # License: WTFPL (http://sam.zoy.org/wtfpl/)
 
+from baumi import utils
 from baumi import config
 from baumi import serverpinger
 
 import random
-import logging
-logger = logging.getLogger(__name__)
+logger = utils.logger.getLogger(__name__)
 
 
 class SpassCommands:
@@ -83,7 +83,7 @@ class SpassCommands:
 class ServerCommands:
     def __init__(self):
         self.server_monitor = dict()
-        self.serverpinger = serverpinger.Pinger(self.sched)
+        self.serverpinger = serverpinger.Pinger()
         self.commands['ping'] = self.ping
         self.commands['laanx'] = self.ping_laanx
         self.commands['monitor'] = self.monitor
@@ -91,7 +91,7 @@ class ServerCommands:
     def close(self):
         for host in self.server_monitor:
             ping = self.server_monitor[host]
-            self.sched.cancel(ping['event'])
+            utils.sched.cancel(ping['event'])
         self.serverpinger.handle_close()
 
     def ping(self, nick, channel, message):
@@ -146,7 +146,7 @@ class ServerCommands:
                 ping['state'] = state
         else:
             self.serverpinger.poke(host, ping['port'], self.handle_monitor)
-            ping['event'] = self.sched.enter(15, 1, self.handle_monitor, (host,))
+            ping['event'] = utils.sched.enter(15, 1, self.handle_monitor, (host,))
 
     def enable_monitor(self, channel, host, port):
         if not host in self.server_monitor:
@@ -171,7 +171,7 @@ class ServerCommands:
                     ping['channels'].remove(channel)
             if not ping['channels']:
                     logger.info('Stopped observing {}.'.format(host))
-                    self.sched.cancel(ping['event'])
+                    utils.sched.cancel(ping['event'])
                     del self.server_monitor[host]
         else: self.send_message('Wie auch immer.', channel)
 

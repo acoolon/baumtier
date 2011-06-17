@@ -1,11 +1,12 @@
 # License: WTFPL (http://sam.zoy.org/wtfpl/)
 
+from baumi import utils
 from baumi import config
 from baumi import asynsocket
 
 import socket
-import logging
-logger = logging.getLogger(__name__)
+
+logger = utils.logger.getLogger(__name__)
 
 
 class IRCMessage:
@@ -210,13 +211,13 @@ class IRCProtocol:
         if nick == self.nick:
             message = 'Was kicked from {} with reason {}. Rejoin in 60 sek.'
             logger.error(message.format(channel_name, repr(reason)))
-            self.sched.enter(60, 1, self.send_join, (channel_name,))
+            utils.sched.enter(60, 1, self.send_join, (channel_name,))
             del self.channels[channel_name]
         self.client.on_nicklist_changed(channel_name)
 
 
 class IRCClient(asynsocket.asynchat):
-    def __init__(self, sched, nick, user, *channels,
+    def __init__(self, nick, user, *channels,
                  host=config.IRC_DEFAULT_HOST, port=config.IRC_DEFAULT_PORT):
         super().__init__()
         (self.host, self.port) = (host, port)
@@ -224,13 +225,12 @@ class IRCClient(asynsocket.asynchat):
         self.channels = channels
         self.terminator = '\r\n'
         self.commands = dict()
-        self.sched = sched
         self.start()
 
     def start(self):
         logger.info('IRC client started.')
         self.protocol.clear_channels()
-        self.timeout_event = self.sched.enter(config.IRC_TIMEOUT, 1,
+        self.timeout_event = utils.sched.enter(config.IRC_TIMEOUT, 1,
                                               self.start, tuple())
         try:
             self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -250,7 +250,7 @@ class IRCClient(asynsocket.asynchat):
         self.protocol.send_join(*self.channels)
 
     def disconnect(self):
-        self.sched.cancel(self.timeout_event)
+        utils.sched.cancel(self.timeout_event)
         self.protocol.send_part(*self.channels)
         self.protocol.send_quit()
 
@@ -278,9 +278,9 @@ class IRCClient(asynsocket.asynchat):
         if message: self.protocol.send_action(message, channel)
 
     def found_terminator(self, message):
-        if self.timeout_event in self.sched.queue:
-            self.sched.cancel(self.timeout_event)
-            self.timeout_event = self.sched.enter(config.IRC_TIMEOUT, 1,
+        if self.timeout_event in utils.sched.queue:
+            utils.sched.cancel(self.timeout_event)
+            self.timeout_event = utils.sched.enter(config.IRC_TIMEOUT, 1,
                                                   self.start, tuple())
         self.protocol.handle_message(message)
 
