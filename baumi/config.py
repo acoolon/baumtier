@@ -4,7 +4,7 @@ import os
 import time
 import logging
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 DATA_PATH = 'data'
 LOG_PATH = os.path.join(DATA_PATH, 'logs')
@@ -16,7 +16,7 @@ BOOKMARKFILE = os.path.join(DATA_PATH, 'bookmarks')
 
 LOGGING_FORMAT = '%(asctime)s %(name)s %(levelname)s:%(message)s'
 LOGGING_DATEFTM = '%d-%m %H:%M:%S'
-LOGGING_LEVEL = logging.DEBUG
+LOGGING_LEVEL = logging.INFO
 
 IRC_DEFAULT_HOST = 'irc.freenode.net'
 IRC_DEFAULT_PORT = 6667
