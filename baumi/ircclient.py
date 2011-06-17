@@ -139,12 +139,14 @@ class IRCProtocol:
         elif msg.command in ('265', '266', '250', '366'): pass
         elif msg.command in ('332', '333', '328'): pass
         else:
-            logger.debug(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
+            logger.warning(' - '.join((msg.nick, msg.user, msg.command, str(msg.params))))
 
     def handle_ping(self, msg): self.send_pong(*msg.params)
     def handle_privmsg(self, msg):
         (channel, message) = msg.params
-        if channel == self.nick: channel = msg.nick
+        if channel == self.nick:
+            channel = msg.nick
+            logger.info('{} told me >{}<'.format(channel, message))
         self.client.process(msg.nick, channel, message)
 
     def handle_nicklist(self, msg):
@@ -302,7 +304,7 @@ class IRCClient(asynsocket.asynchat):
 
     def fallback_callback(self, command, nick, channel, message):
         msg = '{} called unimplemented command {} in {}: {}'
-        logger.info(msg.format(nick, command, channel, message))
+        logger.warning(msg.format(nick, command, channel, message))
 
     def error_callback(self, command, nick, channel, message):
         msg = 'Error: {} called command {} in {}: {}'
