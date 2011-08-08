@@ -7,54 +7,214 @@ from baumi import serverpinger
 import random
 logger = utils.logger.getLogger(__name__)
 
+class CommandHandler:
+    def __init__(self):
+        self.commands = self.command_handler = None
+
+    def handle_start(self):
+        self.commands = dict()
+        self.command_handler = list()
+        for Handler in COMMANDS:
+            handler = Handler(self)
+            self.command_handler.append(handler)
+        self.register('help', self.help)
+        self.register('hilfe', self.help)
+
+    def handle_close(self):
+        for handler in self.command_handler:
+            if callable(getattr(handler, 'close')): handler.close()
+        self.commands = self.command_handler = None
+
+    def call_cmd(self, name, ircclient, nick, channel, message):
+        if name in self.commands:
+            command = self.commands[name]
+            try: command(ircclient, nick, channel, message)
+            except ValueError: return None
+        else: return False
+        msg = '{} called command {} in {}: {}'
+        logger.info(msg.format(nick, name, channel, message))
+        return True
+
+    def register(self, name, command):
+        self.commands[name] = command
+
+#    def use_brain(self, nick, channel, message):
+#        if message.startswith(self.protocol.nick):  # somehow important
+#            logger.info('Brain on: {}-{}-{}'.format(nick, channel, message))
+#            if 'line' in message:  # online/offline
+#                if 'ero' in message or 'aanx' in message:
+#                    self.ping(nick, channel, 'zero')
+#               elif 'ez' in message or 'zpx' in message:
+#                    self.ping(nick, channel, 'ez')
+#            elif 'ink' in message:  # link/Link
+#                (crap, intresting) = message.split('ink ')
+#                words = intresting.split(' ')
+#                if words[0] == 'für':
+#                    next_word = words[1]
+#                    if next_word in ('der', 'die', 'das'):
+#                        next_word = words[2]
+#                    self.link(nick, channel, next_word)
+
+    def help(self, ircclient, nick, channel, message):
+        '''[command] :ein kurzer Hilfetext
+        Ohne Parameter wird eine Liste aller Kommandos ausgegeben.
+        Mit einem Kommando als Parameter gibt es die ausführliche
+        (wenn vorhanden) Hilfe.
+        '''
+        if message:
+            try: cmd = self.commands[message]
+            except KeyError: ircclient.send_message('Kenn ich nicht.', nick)
+            else:
+                if cmd.__doc__:
+                    ircclient.send_message('Hilfe für !{}:'.format(message), nick)
+                    (short_help, *long_help) = cmd.__doc__.split('\n')
+                    msg = '!{} {}'.format(cmd.__name__, short_help)
+                    ircclient.send_message(msg, nick)
+                    for line in long_help:
+                        ircclient.send_message(line.strip(), nick)
+                else: ircclient.send_message('Kenn ich nicht.', nick)
+        else:
+            ircclient.send_message('Baumtier v{}'.format(config.__version__), nick)
+            ircclient.send_message('Kommandos sind:', nick)
+            cmds = list()
+            for cmd_name in self.commands:
+                cmd = self.commands[cmd_name]
+                if cmd.__doc__: cmds.append('!' + cmd_name)
+            ircclient.send_message(', '.join(cmds), nick)
+            ircclient.send_message('!hilfe [command] für mehr Informationen', nick)
+
+
+class UtilityCommands:
+    def __init__(self, command_handler):
+        command_handler.register('bookmark', self.bookmark)
+        command_handler.register('link', self.link)
+        command_handler.register('join', self.join)
+        command_handler.register('part', self.part)
+        command_handler.register('quit', self.quit)
+
+    def join(self, ircclient, nick, channel, message):
+        ' channel :Betrete channel, separiert durch " "'
+        channels = message.split()
+        if ircclient.is_authorized(channel, nick):
+                ircclient.protocol.send_join(*channels)
+        else: ircclient.send_message('Das darfst  du nicht!', nick)
+
+    def part(self, ircclient, nick, channel, message):
+        ' channel :Verlasse channel, separiert durch " "'
+        channels = message.split()
+        if ircclient.is_authorized(channel, nick):
+            ircclient.protocol.send_part(*channels)
+        else: ircclient.send_message('Das darfst  du nicht!', nick)
+
+    def quit(self, ircclient, nick, channel, message):
+        ' :Beende Baumtier'
+        if ircclient.is_authorized(channel, nick): ircclient.disconnect()
+        else: ircclient.send_message('Das darfst  du nicht!', nick)
+
+    def bookmark(self, ircclient, nick, channel, message):
+        '''befehl [name] [link]
+        Verbinde Links mit einem Namen.
+        add name link: Füge den Link der Liste hinzu
+        del name: Lösche alle Links die mit Name verbunden wurden
+        list [name]: Liste alle Links die mit Name verbunden wurden
+        '''
+        (command, *name_link) = message.split(' ', 2)
+        if command == 'add': self.bookmark_add(nick, channel, *name_link)
+        elif command == 'del': self.bookmark_del(nick, channel, *name_link)
+        elif command == 'list': self.bookmark_list(nick, channel, *name_link)
+        else: raise ValueError('Bookmarks falsch aufgerufen')
+
+    def read_bookmarks(self):
+        try: f_book = open(config.BOOKMARKFILE)
+        except EnvironmentError: return False
+        else:
+            lines = f_book.read().split('\n')
+            f_book.close()
+            return [line.split(' ', 1) for line in lines if line]
+
+    def bookmark_add(self, nick, channel, *args):
+        if ircclient.is_authorized(channel, nick):
+            (name, link) = args
+            with open(config.BOOKMARKFILE, 'a') as f_book:
+                f_book.write('{} {}\n'.format(name, link))
+                ircclient.send_message('Ok, erledigt.', channel)
+        else: ircclient.send_message('Das darfst  du nicht!', channel)
+
+    def bookmark_del(self, nick, channel, *args):
+        if ircclient.is_authorized(channel, nick):
+            (name, *crap) = args
+            lines = self.read_bookmarks()
+            if lines:
+                new_lines = list()
+                deleted_lines = list()
+                for (new_name, link) in lines:
+                    if new_name == name: deleted_lines.append(link)
+                    else: new_lines.append('{} {}\n'.format(new_name, link))
+                with open(config.BOOKMARKFILE, 'w') as f_book:
+                    f_book.write(''.join(new_lines))
+                if deleted_lines:
+                    msg = '{} gelöscht.'.format(' | '.join(deleted_lines))
+                    ircclient.send_message(msg, channel)
+                else: ircclient.send_message('Es gibt nichts zu löschen', channel)
+            else: ircclient.send_message('Es gibt noch keine Bookmarks', channel)
+        else: ircclient.send_message('Das darfst  du nicht!', channel)
+
+    def bookmark_list(self, nick, channel, *args):
+        lines = self.read_bookmarks()
+        if lines:
+            if args:
+                name = args[0]
+                links = list()
+                for (new_name, link) in lines:
+                    if name == new_name: links.append(link)
+                if links: ircclient.send_message(' | '.join(links), channel)
+                else:
+                    msg = 'Keine Links für diesen Namen gespeichert'
+                    ircclient.send_message(msg, channel)
+            else:
+                names = set([name for (name, link) in lines])
+                msg = 'Alle Namen: {}'.format(' | '.join(names))
+                ircclient.send_message(msg, channel)
+        else: ircclient.send_message('Es gibt noch keine Bookmarks', channel)
+
+    def link(self, nick, channel, *args):
+        ': alias für !bookmark list'
+        if args == ('',): args = tuple()
+        self.bookmark_list(nick, channel, *args)
+
 
 class SpassCommands:
-    def __init__(self):
-        self.commands['sage'] = self.say
-        self.commands['frage'] = self.frage
-        self.commands['gib'] = self.gib
-        self.commands['bring'] = self.bring
-        self.commands['rothaus'] = self.rothaus
-        self.commands['8ball'] = self.eightball
-        self.commands['roll'] = self.roll
+    def __init__(self, command_handler):
+        command_handler.register('sage', self.say)
+        command_handler.register('gib', self.gib)
+        command_handler.register('bring', self.bring)
+        command_handler.register('8ball', self.eightball)
+        command_handler.register('roll', self.roll)
 
-    def close(self): pass
-
-    def say(self, nick, channel, message):
+    def say(self, ircclient, nick, channel, message):
         if channel == nick:
             (new_channel, msg) = message.split(' ', 1)
-            self.send_message(msg, new_channel)
+            ircclient.send_message(msg, new_channel)
 
-    def frage(self, nick, channel, message):
-        '''ziel frage: sende eine frage an ziel
-        z.b. !frage peter ob peter kekse schmecken
-        -> Baumi würde gerne wissen, ob peter kekse schmecken.
-        Funktioniert nur aus einem query.
-        '''
-        if channel == nick:
-            (new_channel, msg) = message.split(' ', 1)
-            self.send_action('würde gerne wissen, {}'.format(msg), new_channel)
-
-
-    def gib(self, nick, channel, message):
+    def gib(self, ircclient, nick, channel, message):
         '<Empfänger> <Objekt>'
         (to, what) = message.split(' ', 1)
         if to == 'dir':
-            self.send_message('Yay, {} für mich.'.format(what), channel)
+            ircclient.send_message('Yay, {} für mich.'.format(what), channel)
         else:
             if to == 'mir': to = nick
-            self.send_action('gibt {} {}'.format(to, what), channel)
+            ircclient.send_action('gibt {} {}'.format(to, what), channel)
 
-    def bring(self, nick, channel, message):
+    def bring(self, ircclient, nick, channel, message):
         '<Empfänger> <Objekt>'
         (to, what) = message.split(' ', 1)
         if to == 'mir': to = nick
         if to == 'dir':
-            self.send_message('Yay, {} für mich.'.format(what), channel)
+            ircclient.send_message('Yay, {} für mich.'.format(what), channel)
         else:
-            self.send_action('bringt {} {}'.format(to, what), channel)
+            ircclient.send_action('bringt {} {}'.format(to, what), channel)
 
-    def eightball(self, nick, channel, message):
+    def eightball(self, ircclient, nick, channel, message):
         '''<Frage> :lass mich einfach entscheiden
         Nur Fragen, die mit Ja/Nein beantwortet werden können
         '''
@@ -65,28 +225,23 @@ class SpassCommands:
                 'Auf keinen Fall!', 'Ganz klar: Nein!')
             ans_list = random.choice((pos_ans, neg_ans))
             ans = random.choice(ans_list)
-            self.send_message('{}: {}'.format(nick, ans), channel)
+            ircclient.send_message('{}: {}'.format(nick, ans), channel)
         else: raise ValueError('eine frage fehlt')
 
-    def roll(self, nick, channel, message):
+    def roll(self, ircclient, nick, channel, message):
         'number :eine Zahl zwischen 0 und number wählen'
         number = int(message)
         msg = '{}, deine Zahl ist {}.'.format(nick, random.randint(0, number))
-        self.send_message(msg, channel)
-
-    def rothaus(self, nick, channel, message):
-        ':ein Bier für Haraun'
-        if 'araun' in nick: self.send_action('gibt Haraun Rothaus!', channel)
-        else: self.send_message('Rothaus gibt es nur für Haraun.', channel)
+        ircclient.send_message(msg, channel)
 
 
-class ServerCommands:
-    def __init__(self):
+class PingCommands:
+    def __init__(self, command_handler):
         self.server_monitor = dict()
         self.serverpinger = serverpinger.Pinger()
-        self.commands['ping'] = self.ping
-        self.commands['laanx'] = self.ping_laanx
-        self.commands['monitor'] = self.monitor
+        command_handler.register('ping', self.ping)
+        command_handler.register('laanx', self.ping_laanx)
+        command_handler.register('monitor', self.monitor)
 
     def close(self):
         for host in self.server_monitor:
@@ -94,7 +249,7 @@ class ServerCommands:
             utils.sched.cancel(ping['event'])
         self.serverpinger.handle_close()
 
-    def ping(self, nick, channel, message):
+    def ping(self, ircclient, nick, channel, message):
         '''zeroping|ezpcusa|host:port
         Pingt den Server an und berechnet die Packetumlaufzeit.
         Falls der Server sich nicht innerhalb von zwei Sekunden meldet
@@ -104,7 +259,7 @@ class ServerCommands:
             if host == '62.173.168.9': host = 'ZeroPing'
             elif host == '70.167.49.20': host = 'Ezpcusa'
             msg = '{}, {} ist {} ({}ms).'.format(nick, host, state, delay)
-            self.send_message(msg, channel)
+            ircclient.send_message(msg, channel)
 
         if ':' in message:
             (host, port) = message.split(':')
@@ -115,11 +270,11 @@ class ServerCommands:
         else: raise ValueError
         self.serverpinger.poke(host, port, response)
 
-    def ping_laanx(self, nick, channel, message):
+    def ping_laanx(self, ircclient, nick, channel, message):
         ':alias für !ping zeroping'
         self.ping(nick, channel, 'zeroping')
 
-    def monitor(self, nick, channel, message):
+    def monitor(self, ircclient, nick, channel, message):
         'zeroping|ezpcusa|host:port ein|aus'
         (adress, cmd) = message.split()
         if ':' in adress:
@@ -142,7 +297,7 @@ class ServerCommands:
                 if host == '62.173.168.9': host = 'ZeroPing'
                 elif host == '70.167.49.20': host = 'Ezpcusa'
                 msg = '{} ist {} ({}ms).'.format(host, state, delay)
-                for ch in ping['channels']: self.send_message(msg, ch)
+                for ch in ping['channels']: ircclient.send_message(msg, ch)
                 ping['state'] = state
         else:
             self.serverpinger.poke(host, ping['port'], self.handle_monitor)
@@ -158,133 +313,31 @@ class ServerCommands:
         ping = self.server_monitor[host]
         if channel in ping['channels']:
                 msg = 'Ich überwache {} bereits für {}.'
-                self.send_message(msg.format(host, channel), channel)
+                ircclient.send_message(msg.format(host, channel), channel)
         else:
             ping['channels'].append(channel)
-            self.send_message('Überwachung gestartet.', channel)
+            ircclient.send_message('Überwachung gestartet.', channel)
 
     def disable_monitor(self, channel, host, port):
         if host in self.server_monitor:
             ping = self.server_monitor[host]
             if channel in ping['channels']:
-                    self.send_message('Uberwachung gestoppt', channel)
+                    ircclient.send_message('Überwachung gestoppt', channel)
                     ping['channels'].remove(channel)
             if not ping['channels']:
                     logger.info('Stopped observing {}.'.format(host))
                     utils.sched.cancel(ping['event'])
                     del self.server_monitor[host]
-        else: self.send_message('Wie auch immer.', channel)
+        else: ircclient.send_message('Wie auch immer.', channel)
 
 
-class UtilityCommands:
-    def __init__(self):
-        self.commands['bookmark'] = self.bookmark
-        self.commands['link'] = self.link
-        self.commands['join'] = self.join
-        self.commands['part'] = self.part
-        self.commands['quit'] = self.quit
 
-    def close(self): pass
-
-    def join(self, nick, channel, message):
-        ' channel :Betrete channel, separiert durch " "'
-        channels = message.split()
-        if self.is_authorized(channel, nick):
-                self.protocol.send_join(*channels)
-        else: self.send_message('Das darfst  du nicht!', nick)
-
-    def part(self, nick, channel, message):
-        ' channel :Verlasse channel, separiert durch " "'
-        channels = message.split()
-        if self.is_authorized(channel, nick):
-            self.protocol.send_part(*channels)
-        else: self.send_message('Das darfst  du nicht!', nick)
-
-    def quit(self, nick, channel, message):
-        ' :Beende Baumtier'
-        if self.is_authorized(channel, nick): self.disconnect()
-        else: self.send_message('Das darfst  du nicht!', nick)
-
-    def bookmark(self, nick, channel, message):
-        '''befehl [name] [link]
-        Verbinde Links mit einem Namen.
-        add name link: Füge den Link der Liste hinzu
-        del name: Lösche alle Links die mit Name verbunden wurden
-        list [name]: Liste alle Links die mit Name verbunden wurden
-        '''
-        (command, *name_link) = message.split(' ', 2)
-        if command == 'add': self.bookmark_add(nick, channel, *name_link)
-        elif command == 'del': self.bookmark_del(nick, channel, *name_link)
-        elif command == 'list': self.bookmark_list(nick, channel, *name_link)
-        else: raise ValueError('Bookmarks falsch aufgerufen')
-
-    def read_bookmarks(self):
-        try: f_book = open(config.BOOKMARKFILE)
-        except EnvironmentError: return False
-        else:
-            lines = f_book.read().split('\n')
-            f_book.close()
-            return [line.split(' ', 1) for line in lines if line]
-
-    def bookmark_add(self, nick, channel, *args):
-        if self.is_authorized(channel, nick):
-            (name, link) = args
-            with open(config.BOOKMARKFILE, 'a') as f_book:
-                f_book.write('{} {}\n'.format(name, link))
-                self.send_message('Ok, erledigt.', channel)
-        else: self.send_message('Das darfst  du nicht!', channel)
-
-    def bookmark_del(self, nick, channel, *args):
-        if self.is_authorized(channel, nick):
-            (name, *crap) = args
-            lines = self.read_bookmarks()
-            if lines:
-                new_lines = list()
-                deleted_lines = list()
-                for (new_name, link) in lines:
-                    if new_name == name: deleted_lines.append(link)
-                    else: new_lines.append('{} {}\n'.format(new_name, link))
-                with open(config.BOOKMARKFILE, 'w') as f_book:
-                    f_book.write(''.join(new_lines))
-                if deleted_lines:
-                    msg = '{} gelöscht.'.format(' | '.join(deleted_lines))
-                    self.send_message(msg, channel)
-                else: self.send_message('Es gibt nichts zu löschen', channel)
-            else: self.send_message('Es gibt noch keine Bookmarks', channel)
-        else: self.send_message('Das darfst  du nicht!', channel)
-
-    def bookmark_list(self, nick, channel, *args):
-        lines = self.read_bookmarks()
-        if lines:
-            if args:
-                name = args[0]
-                links = list()
-                for (new_name, link) in lines:
-                    if name == new_name: links.append(link)
-                if links: self.send_message(' | '.join(links), channel)
-                else:
-                    msg = 'Keine Links für diesen Namen gespeichert'
-                    self.send_message(msg, channel)
             else:
-                names = set([name for (name, link) in lines])
-                msg = 'Alle Namen: {}'.format(' | '.join(names))
-                self.send_message(msg, channel)
-        else: self.send_message('Es gibt noch keine Bookmarks', channel)
-
-    def link(self, nick, channel, *args):
-        ': alias für !bookmark list'
-        if args == ('',): args = tuple()
-        self.bookmark_list(nick, channel, *args)
 
 
-class Commands(SpassCommands, ServerCommands, UtilityCommands):
-    def __init__(self):
-        SpassCommands.__init__(self)
-        ServerCommands.__init__(self)
-        UtilityCommands.__init__(self)
 
-    def close(self):
-        SpassCommands.close(self)
-        ServerCommands.close(self)
-        UtilityCommands.close(self)
-
+COMMANDS = [
+            UtilityCommands,
+            SpassCommands,
+            PingCommands,
+           ]

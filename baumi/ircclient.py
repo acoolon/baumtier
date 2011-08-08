@@ -3,6 +3,8 @@
 from baumi import utils
 from baumi import config
 from baumi import asynsocket
+from baumi import commands
+from baumi import ircprotocol
 
 import socket
 
@@ -16,12 +18,13 @@ class IRCClient(asynsocket.asynchat):
         self.protocol = ircprotocol.IRCProtocol(self, nick, user)
         self.channels = channels
         self.terminator = '\r\n'
-        self.commands = dict()
+        self.commands = commands.CommandHandler()
         self.start()
 
     def start(self):
         logger.info('IRC client started.')
         self.protocol.clear_channels()
+        self.commands.handle_start()
         self.timeout_event = utils.sched.enter(config.IRC_TIMEOUT, 1,
                                               self.start, tuple())
         try:
@@ -48,6 +51,7 @@ class IRCClient(asynsocket.asynchat):
 
     def handle_close(self):
         logger.info('IRC client stopped.')
+        self.commands.handle_close()
         self.close()
 
     def handle_error(self):
@@ -81,27 +85,8 @@ class IRCClient(asynsocket.asynchat):
             (command, *message) = message[1:].split(' ', 1)
             if message: message = message[0]
             else: message = ''
-            if command in self.commands:
-                callback = self.commands[command]
-                try: callback(nick, channel, message)
-                except ValueError:
-                    self.error_callback(command, nick, channel, message)
-                else:
-                    msg = '{} called command {} in {}: {}'
-                    logger.info(msg.format(nick, command, channel, message))
-            else: self.fallback_callback(command, nick, channel, message)
-        else: self.use_brain(nick, channel, message)
-
-    def fallback_callback(self, command, nick, channel, message):
-        msg = '{} called unimplemented command {} in {}: {}'
-        logger.warning(msg.format(nick, command, channel, message))
-
-    def error_callback(self, command, nick, channel, message):
-        msg = 'Error: {} called command {} in {}: {}'
-        logger.info(msg.format(nick, command, channel, message))
-
-    def use_brain(self, nick, channel, message):
-        pass
+            self.commands.call_cmd(command, self, nick, channel, message)
+#        else: self.commands.use_brain(nick, channel, message)
 
     def on_nicklist_changed(self, channel):
         logger.info('Nicklist for {} changed.'.format(channel))
