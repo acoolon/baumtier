@@ -4,7 +4,7 @@ import os
 import time
 import logging
 
-__version__ = '0.3'
+__version__ = 'pre0.4'
 
 DATA_PATH = 'data'
 LOG_PATH = os.path.join(DATA_PATH, 'logs')
