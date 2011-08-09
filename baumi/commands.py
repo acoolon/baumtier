@@ -62,13 +62,13 @@ class CommandHandler:
         (wenn vorhanden) Hilfe.
         '''
         if message:
-            try: cmd = self.commands[message]
+            try: cmd = self.commands[message.strip('!')]
             except KeyError: ircclient.send_message('Kenn ich nicht.', nick)
             else:
                 if cmd.__doc__:
                     ircclient.send_message('Hilfe für !{}:'.format(message), nick)
                     (short_help, *long_help) = cmd.__doc__.split('\n')
-                    msg = '!{} {}'.format(cmd.__name__, short_help)
+                    msg = '!{} {}'.format('!' + message, short_help)
                     ircclient.send_message(msg, nick)
                     for line in long_help:
                         ircclient.send_message(line.strip(), nick)
