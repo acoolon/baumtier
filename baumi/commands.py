@@ -2,9 +2,14 @@
 
 from baumi import utils
 from baumi import config
+from baumi import asynsocket
 from baumi import serverpinger
 
+import json
 import random
+import socket
+import urllib.parse as urllib
+
 logger = utils.logger.getLogger(__name__)
 
 class CommandHandler:
@@ -183,6 +188,47 @@ class UtilityCommands:
         self.bookmark_list(nick, channel, *args)
 
 
+class ResearchCommands(asynsocket.asynchat):
+    def __init__(self, command_handler, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.terminator = '\r\n\r\n'
+        self.last_request = {'hd': '', 'bd': ''}
+        command_handler.register('google', self.request_google)
+        command_handler.register('wiki', self.request_wiki)
+
+    def found_terminator(self, message):
+        req = self.last_request
+        if not req['hd']: req['hd'] = message
+        elif not req['bd']: req['bd'] = message
+        else: print('Crap')
+        if req['hd'] and req['bd']:
+            self.process(self.last_request)
+            self.last_request = {'hd': '', 'bd': ''}
+            self.handle_close()
+
+    def request_google(self, ircclient, nick, channel, message):
+        '''Anfrage: gibt das erste Google Ergebnis zurück'''
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connect(('ajax.googleapis.com', 80))
+        message = urllib.quote_plus(message)
+        request = 'GET /ajax/services/search/web?v=1.0&q={} HTTP/1.1'
+        request += '\r\nHost: ajax.googleapis.com'
+        self.send_line(request.format(message))
+        self.last_request['irc'] = ircclient
+        self.last_request['nick'] = nick
+        self.last_request['channel'] = channel
+
+    def request_wiki(self, ircclient, nick, channel, message):
+        '''Anfrage: Sucht per Google in der Wikipedia'''
+        self.request_google(ircclient, nick, channel,
+                            'site:de.wikipedia.org ' + message)
+
+    def process(self, request):
+        body = json.loads(request['bd'].split('\r\n')[1])
+        url = body['responseData']['results'][-1]['url']
+        msg = '{}, {}'.format(request['nick'], url)
+        request['irc'].send_message(msg, request['channel'])
+
 class SpassCommands:
     def __init__(self, command_handler):
         command_handler.register('sage', self.say)
@@ -331,13 +377,9 @@ class PingCommands:
         else: ircclient.send_message('Wie auch immer.', channel)
 
 
-
-            else:
-
-
-
 COMMANDS = [
             UtilityCommands,
+            ResearchCommands,
             SpassCommands,
             PingCommands,
            ]
