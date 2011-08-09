@@ -211,7 +211,7 @@ class ResearchCommands(asynsocket.asynchat):
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connect(('ajax.googleapis.com', 80))
         message = urllib.quote_plus(message)
-        request = 'GET /ajax/services/search/web?v=1.0&q={} HTTP/1.1'
+        request = 'GET /ajax/services/search/web?v=1.0&q={}&hl=de HTTP/1.1'
         request += '\r\nHost: ajax.googleapis.com'
         self.send_line(request.format(message))
         self.last_request['irc'] = ircclient
@@ -225,7 +225,7 @@ class ResearchCommands(asynsocket.asynchat):
 
     def process(self, request):
         body = json.loads(request['bd'].split('\r\n')[1])
-        url = body['responseData']['results'][-1]['url']
+        url = body['responseData']['results'][0]['url']
         msg = '{}, {}'.format(request['nick'], url)
         request['irc'].send_message(msg, request['channel'])
 
