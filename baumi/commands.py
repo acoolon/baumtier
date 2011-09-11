@@ -234,6 +234,7 @@ class SpassCommands:
         command_handler.register('sage', self.say)
         command_handler.register('gib', self.gib)
         command_handler.register('bring', self.bring)
+        command_handler.register('matte', self.matte)
         command_handler.register('8ball', self.eightball)
         command_handler.register('roll', self.roll)
 
@@ -259,6 +260,15 @@ class SpassCommands:
             ircclient.send_message('Yay, {} für mich.'.format(what), channel)
         else:
             ircclient.send_action('bringt {} {}'.format(to, what), channel)
+
+    def matte(self, ircclient, nick, channel, message):
+        'Bereitet dir eine Hängematte vor'
+        f_part = ['holt eine Hängematte', 'holt eine Hängematte und einen Ständer']
+        l_part = [' und hängt sie für {} auf.',
+                  ', hängt sie auf und bittet {} Platz zu nehmen.',
+                  ' und wirft sie vor {} auf den Boden.']
+        string = random.choice(f_part) + random.choice(l_part)
+        ircclient.send_action(string.format(nick), channel)
 
     def eightball(self, ircclient, nick, channel, message):
         '''<Frage> :lass mich einfach entscheiden
