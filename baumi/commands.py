@@ -328,7 +328,7 @@ class PingCommands:
 
     def ping_laanx(self, ircclient, nick, channel, message):
         ':alias für !ping zeroping'
-        self.ping(nick, channel, 'zeroping')
+        self.ping(ircclient, nick, channel, 'zeroping')
 
     def monitor(self, ircclient, nick, channel, message):
         'zeroping|ezpcusa|host:port ein|aus'
