@@ -27,7 +27,8 @@ class CommandHandler:
 
     def handle_close(self):
         for handler in self.command_handler:
-            if callable(getattr(handler, 'close')): handler.close()
+            try: handler.close()
+            except AttributeError: pass
         self.commands = self.command_handler = None
 
     def call_cmd(self, name, ircclient, nick, channel, message):
