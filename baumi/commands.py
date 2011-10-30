@@ -125,9 +125,9 @@ class UtilityCommands:
         list [name]: Liste alle Links die mit Name verbunden wurden
         '''
         (command, *name_link) = message.split(' ', 2)
-        if command == 'add': self.bookmark_add(nick, channel, *name_link)
-        elif command == 'del': self.bookmark_del(nick, channel, *name_link)
-        elif command == 'list': self.bookmark_list(nick, channel, *name_link)
+        if command == 'add': self.bookmark_add(ircclient, nick, channel, *name_link)
+        elif command == 'del': self.bookmark_del(ircclient, nick, channel, *name_link)
+        elif command == 'list': self.bookmark_list(ircclient, nick, channel, *name_link)
         else: raise ValueError('Bookmarks falsch aufgerufen')
 
     def read_bookmarks(self):
@@ -138,7 +138,7 @@ class UtilityCommands:
             f_book.close()
             return [line.split(' ', 1) for line in lines if line]
 
-    def bookmark_add(self, nick, channel, *args):
+    def bookmark_add(self, ircclient, nick, channel, *args):
         if ircclient.is_authorized(channel, nick):
             (name, link) = args
             with open(config.BOOKMARKFILE, 'a') as f_book:
@@ -146,7 +146,7 @@ class UtilityCommands:
                 ircclient.send_message('Ok, erledigt.', channel)
         else: ircclient.send_message('Das darfst  du nicht!', channel)
 
-    def bookmark_del(self, nick, channel, *args):
+    def bookmark_del(self, ircclient, nick, channel, *args):
         if ircclient.is_authorized(channel, nick):
             (name, *crap) = args
             lines = self.read_bookmarks()
@@ -165,7 +165,7 @@ class UtilityCommands:
             else: ircclient.send_message('Es gibt noch keine Bookmarks', channel)
         else: ircclient.send_message('Das darfst  du nicht!', channel)
 
-    def bookmark_list(self, nick, channel, *args):
+    def bookmark_list(self, ircclient, nick, channel, *args):
         lines = self.read_bookmarks()
         if lines:
             if args:
@@ -183,10 +183,10 @@ class UtilityCommands:
                 ircclient.send_message(msg, channel)
         else: ircclient.send_message('Es gibt noch keine Bookmarks', channel)
 
-    def link(self, nick, channel, *args):
+    def link(self, ircclient, nick, channel, *args):
         ': alias für !bookmark list'
         if args == ('',): args = tuple()
-        self.bookmark_list(nick, channel, *args)
+        self.bookmark_list(ircclient, nick, channel, *args)
 
 
 class ResearchCommands(asynsocket.asynchat):
