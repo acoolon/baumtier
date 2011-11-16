@@ -343,9 +343,9 @@ class PingCommands:
         else: raise ValueError
 
         if cmd in ('ein', 'an', 'on', 'start'):
-            self.enable_monitor(channel, host, port)
+            self.enable_monitor(ircclient, channel, host, port)
         elif cmd in ('aus', 'halt', 'stop', 'off'):
-            self.disable_monitor(channel, host, port)
+            self.disable_monitor(ircclient, channel, host, port)
 
     def handle_monitor(self, host, state=None, delay=None):
         ping = self.server_monitor[host]
@@ -354,16 +354,17 @@ class PingCommands:
                 if host == '62.173.168.9': host = 'ZeroPing'
                 elif host == '70.167.49.20': host = 'Ezpcusa'
                 msg = '{} ist {} ({}ms).'.format(host, state, delay)
-                for ch in ping['channels']: ircclient.send_message(msg, ch)
+                for ch in ping['channels']: ping['ircclient'].send_message(msg, ch)
                 ping['state'] = state
         else:
             self.serverpinger.poke(host, ping['port'], self.handle_monitor)
             ping['event'] = utils.sched.enter(15, 1, self.handle_monitor, (host,))
 
-    def enable_monitor(self, channel, host, port):
+    def enable_monitor(self, ircclient, channel, host, port):
         if not host in self.server_monitor:
             logger.info('Startet observing {}.'.format(host))
-            ping = {'port': port, 'state': None, 'channels': [], 'event': None}
+            ping = {'port': port, 'state': None, 'channels': [],
+                    'event': None, 'ircclient': ircclient}
             self.server_monitor[host] = ping
             self.handle_monitor(host)
 
@@ -375,7 +376,7 @@ class PingCommands:
             ping['channels'].append(channel)
             ircclient.send_message('Überwachung gestartet.', channel)
 
-    def disable_monitor(self, channel, host, port):
+    def disable_monitor(self, ircclient, channel, host, port):
         if host in self.server_monitor:
             ping = self.server_monitor[host]
             if channel in ping['channels']:
