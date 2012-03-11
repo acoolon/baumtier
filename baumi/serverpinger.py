@@ -1,8 +1,5 @@
 #!/usr/bin/env pyhon
 # License: WTFPL (http://sam.zoy.org/wtfpl/)
-# serverpinger py Thob
-# Usage: modifiy the adress an main() and run it
-
 __version__ = '0.2'
 
 from baumi import utils

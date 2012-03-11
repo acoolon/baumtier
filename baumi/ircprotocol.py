@@ -79,7 +79,7 @@ class IRCChannel:
 
     def set_mode(self, user, mode):
         if not mode: return
-        logger.info('mode change: {}..'jformat(mode))
+        logger.info('mode change: {}..'.format(mode))
         (change, new_mode) = mode
         if user in self.modes:
             user_mode = self.modes[user]

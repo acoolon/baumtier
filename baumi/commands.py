@@ -307,13 +307,13 @@ class PingCommands:
         self.serverpinger.handle_close()
 
     def ping(self, ircclient, nick, channel, message):
-        '''zeroping|ezpcusa|host:port
+        '''subhosting|ezpcusa|host:port
         Pingt den Server an und berechnet die Packetumlaufzeit.
         Falls der Server sich nicht innerhalb von zwei Sekunden meldet
         nehmen wir an, dass er offline ist.
         '''
         def response(host, state, delay):
-            if host == '62.173.168.9': host = 'ZeroPing'
+            if host == '209.59.234.149': host = 'SubHosting'
             elif host == '70.167.49.20': host = 'Ezpcusa'
             msg = '{}, {} ist {} ({}ms).'.format(nick, host, state, delay)
             ircclient.send_message(msg, channel)
@@ -321,24 +321,24 @@ class PingCommands:
         if ':' in message:
             (host, port) = message.split(':')
             port = int(port)
-        elif 'zero' in message: (host, port) = ('62.173.168.9', 7777)
-        elif 'laanx' in message: (host, port) = ('62.173.168.9', 7777)
+        elif 'sub' in message: (host, port) = ('209.59.234.149', 7777)
+        elif 'laanx' in message: (host, port) = ('209.59.234.149', 7777)
         elif 'ez' in message: (host, port) = ('70.167.49.20', 7777)
         else: raise ValueError
         self.serverpinger.poke(host, port, response)
 
     def ping_laanx(self, ircclient, nick, channel, message):
-        ':alias für !ping zeroping'
-        self.ping(ircclient, nick, channel, 'zeroping')
+        ':alias für !ping subhosting'
+        self.ping(ircclient, nick, channel, 'subhosting')
 
     def monitor(self, ircclient, nick, channel, message):
-        'zeroping|ezpcusa|host:port ein|aus'
+        'subhosting|ezpcusa|host:port ein|aus'
         (adress, cmd) = message.split()
         if ':' in adress:
             (host, port) = adress.split(':')
             port = int(port)
-        elif 'zero' in adress: (host, port) = ('62.173.168.9', 7777)
-        elif 'laanx' in adress: (host, port) = ('62.173.168.9', 7777)
+        elif 'sub' in adress: (host, port) = ('209.59.234.149', 7777)
+        elif 'laanx' in adress: (host, port) = ('209.59.234.149', 7777)
         elif 'ez' in adress: (host, port) = ('70.167.49.20', 7777)
         else: raise ValueError
 
@@ -351,7 +351,7 @@ class PingCommands:
         ping = self.server_monitor[host]
         if state and delay:
             if ping['state'] != state:
-                if host == '62.173.168.9': host = 'ZeroPing'
+                if host == '209.59.234.149': host = 'SubHosting'
                 elif host == '70.167.49.20': host = 'Ezpcusa'
                 msg = '{} ist {} ({}ms).'.format(host, state, delay)
                 for ch in ping['channels']: ping['ircclient'].send_message(msg, ch)
